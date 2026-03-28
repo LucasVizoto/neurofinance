@@ -46,7 +46,7 @@ export async function register (request: FastifyRequest, reply: FastifyReply) {
         const registerUseCase  = makeRegisterUseCase()
         
         const {user} = await registerUseCase.execute({
-            zendesk_user_id,
+            ,
             fullname,
             username,
             phone,

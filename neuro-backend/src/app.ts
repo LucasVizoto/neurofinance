@@ -4,10 +4,7 @@ import { env } from "./env/index.js";
 import { userRoutes } from "./http/controllers/users/routes.js";
 import fastifyJwt from "@fastify/jwt";
 import fastifyCookie from "@fastify/cookie";
-import { demandRoutes } from "./http/controllers/demands/routes.js";
-import { usersOnDemandsRoutes } from "./http/controllers/users-on-demands/routes.js";
 import fastifyCors from "@fastify/cors";
-import { shopsRoutes } from "./http/controllers/shops/routes.js";
 
 //*********INSTANCIA DA APLICAÇÃO COM CONFIGS DO SERVIDOR*********//
 export const app = fastify()
@@ -34,9 +31,7 @@ app.register(fastifyCors, {
 
 //*********REGISTRO DE ROTAS*********//
 app.register(userRoutes)
-app.register(demandRoutes)
-app.register(usersOnDemandsRoutes)
-app.register(shopsRoutes)
+
 
 //*********HANDLER DE ERROS*********//
 app.setErrorHandler((error, _request, reply)=>{
@@ -46,11 +41,5 @@ app.setErrorHandler((error, _request, reply)=>{
         .status(400)
         .send({message: 'Validation error', issues: error.format()})
     }
-    if (env.NODE_ENV !== "production"){
-        
-        return reply.status(error.statusCode ?? 400).send({message: error.message})
-
-    }
-
     return reply.status(500).send({message: 'Internal Server Error'})
 })

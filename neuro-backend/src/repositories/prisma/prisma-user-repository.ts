@@ -14,7 +14,7 @@ import type { Prisma, Users } from "@/generated/prisma/client.js";
  *
  */
 export class PrismaUserRepository implements UsersRepository{
-    async findById(id: number) {
+    async findById(id: string) {
         const user = await prisma.users.findUnique({
             where:{
                 id: id,
@@ -66,12 +66,17 @@ export class PrismaUserRepository implements UsersRepository{
     async save(user: Users){
         await prisma.users.update({
             data:{
-                zendesk_user_id: user.zendesk_user_id,
+                cpf: user.cpf,
+                customColor: user.customColor,
+                preferenceTicker: user.preferenceTicker,
+                profileImageName: user.profileImageName,
+                profileImageUrl: user.profileImageUrl,
+                theme: user.theme,
                 username: user.username,
                 fullname: user.fullname,
                 email: user.email,
                 phone: user.phone,
-                updated_at: new Date()
+                updatedAt: new Date()
             },
             where: {
                 id: user.id

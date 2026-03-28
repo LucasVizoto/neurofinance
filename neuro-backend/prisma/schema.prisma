@@ -1,0 +1,49 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Users {
+  id               String    @id @default(uuid())
+  username         String    @unique
+  password         String
+  email            String    @unique
+  fullname         String
+  cpf              String    @unique
+  status           Boolean   @default(true)
+  theme            String?   @default("dark")
+  customColor      String?   @default("##0D9394") @map("custom_color")
+  profileImageName String?   @map("profile_image_name")
+  profileImageUrl  String?   @map("profile_image_url")
+  preferenceTicker String?   @map("preference_ticker")
+  phone            String?
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  deletedAt        DateTime? @map("deleted_at")
+
+  @@map("users")
+}
+
+model Chats {
+  id             Int       @id @default(autoincrement())
+  userId         Int       @map("user_id")
+  mongo_id       String    @map("mongo_id")
+  status         Boolean   @default(true)
+  initialContext String    @map("initial_context")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  @@map("chats")
+}

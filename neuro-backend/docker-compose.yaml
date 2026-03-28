@@ -1,0 +1,9 @@
+services:
+    neuro-finance-pg:
+        image: bitnami/postgresql
+        ports:
+            - "5436:5432"
+        environment:
+            - POSTGRESQL_USERNAME=admin
+            - POSTGRESQL_PASSWORD=123456
+            - POSTGRESQL_DATABASE=postgresql

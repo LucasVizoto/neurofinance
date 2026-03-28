@@ -1,0 +1,7 @@
+
+# --------------------ENVIORMENT--------------------
+.env
+/node_modules
+
+# -------------------- INFRAESTRUCTURE --------------------
+/src/generated

@@ -3,8 +3,6 @@ import { RegisterUseCase } from './register.js'
 import { compare } from 'bcryptjs'
 import { InMemoryUsersRepository } from '@/repositories/in-memory/in-memory-user-repository.js'
 import { UserAlreadyExistsError } from '../_errors/user-already-exists-error.js'
-import { faker } from '@faker-js/faker'
-import { randomInt } from 'node:crypto'
 import { makeUser } from '@/utils/tests/factories/make-user.js'
 
 let userRepository: InMemoryUsersRepository
@@ -21,7 +19,7 @@ describe('Register Use-Case', () => {
 
         const { user } = await sut.execute(await makeUser())
 
-        expect(user.id).toEqual(expect.any(Number))
+        expect(user.id).toEqual(expect.any(String))
     })
 
 

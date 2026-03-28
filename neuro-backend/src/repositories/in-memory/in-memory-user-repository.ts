@@ -27,6 +27,16 @@ export class InMemoryUsersRepository implements UsersRepository {
         return user
     }
 
+    async findByCpf(cpf: string) {
+        const user = this.items.find(item => item.cpf == cpf)
+
+        if (!user) {
+            return null
+        }
+
+        return user
+    }
+
     async findByUsername(username: string) {
         const user = this.items.find(item => item.username == username)
 
@@ -50,7 +60,7 @@ export class InMemoryUsersRepository implements UsersRepository {
             theme: data.theme ?? null,
             email: data.email!,
             phone: data.phone ?? null,
-            password: await hash(data.password!, 6),
+            password: data.password!,
             status: data.status ?? true,
             createdAt: data.createdAt instanceof Date ? data.createdAt : new Date(),
             updatedAt: data.updatedAt instanceof Date ? data.updatedAt : new Date(),

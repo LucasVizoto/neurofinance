@@ -5,7 +5,7 @@ export async function makeUser(password?: string, email?: string, username?: str
     return {
         cpf: cpf ? cpf : faker.string.numeric(11),
         customColor: null,
-        preferenceTicker: null,
+        preferenceTicker: 'GOOG',
         profileImageName: null,
         profileImageUrl: null,
         theme: null,

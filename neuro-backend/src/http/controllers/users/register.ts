@@ -5,40 +5,44 @@ import { makeRegisterUseCase } from '@/use-cases/users/composers/make-register-u
 
 export async function register(request: FastifyRequest, reply: FastifyReply) {
     const registerBodySchema = z.object({
-        zendesk_user_id: z.number(),
-        fullname: z.string(),
-        phone: z.string(),
         username: z.string(),
-        email: z.string().email(),
         password: z.string().min(6),
+        email: z.string().email(),
+        fullname: z.string(),
+        cpf: z.string(),
+        preferenceTicker: z.string().optional(),
+        phone: z.string(),
     })
 
-    const { zendesk_user_id, fullname, phone, username, email, password } = registerBodySchema.parse(request.body)
+    const { cpf, fullname, phone, username, email, password } = registerBodySchema.parse(request.body)
 
     try {
 
         const registerUseCase = makeRegisterUseCase()
 
-        const { user } = await registerUseCase.execute({
-            ,
+        await registerUseCase.execute({
             fullname,
             username,
             phone,
+            cpf,
             status: true,
+            customColor: null,
+            profileImageName: null,
+            profileImageUrl: null,
+            preferenceTicker: null,
             email,
             password
         })
 
-    return reply.status(201).send({
-        ...user,
-        password: undefined
-    })
+        return reply.status(201).send({
+            message: 'User registered successfully',
+        })
 
-} catch (err) {
-    if (err instanceof UserAlreadyExistsError) {
-        return reply.status(409).send({ message: err.message })
+    } catch (err) {
+        if (err instanceof UserAlreadyExistsError) {
+            return reply.status(409).send({ message: err.message })
+        }
+
+        throw err
     }
-
-    throw err
-}
 }

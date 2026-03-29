@@ -4,19 +4,18 @@ import type { UsersRepository } from "@/repositories/user-repository.js"
 import type { Users } from "@/generated/prisma/client.js"
 
 interface RegisterUseCaseRequest {
-    cpf: string
-    customColor: string | null
-    preferenceTicker: string | null
-    profileImageName: string | null
-    profileImageUrl: string | null
-    theme: string | null
     username: string
-    fullname: string
-    email: string
-    phone: string
-
     password: string
+    email: string
+    fullname: string
+    cpf: string
     status: boolean
+    theme?: string | null
+    customColor?: string | null
+    profileImageName?: string | null
+    profileImageUrl?: string | null
+    preferenceTicker?: string | null
+    phone?: string
 }
 
 interface RegisterUseCaseResponse {
@@ -40,19 +39,18 @@ export class RegisterUseCase {
         }
 
         const user = await this.userRepository.create({
-            cpf,
-            customColor,
-            preferenceTicker,
-            profileImageName,
-            profileImageUrl,
-            theme,
             username,
-            fullname,
-            email,
-            phone,
             password: password_hash,
+            email,
+            fullname,
+            cpf,
             status,
-
+            customColor: customColor ?? null,
+            preferenceTicker: preferenceTicker ?? null,
+            profileImageName: profileImageName ?? null,
+            profileImageUrl: profileImageUrl ?? null,
+            theme: theme ?? null,
+            phone: phone ?? null,
         })
         return {
             user,

@@ -2,6 +2,8 @@ import { InMemoryUsersRepository } from '@/repositories/in-memory/in-memory-user
 import { expect, it, describe, beforeEach } from 'vitest'
 import { FindUserByIdUseCase } from './find-by-id.js'
 import { ResourceNotFoundError } from '../_errors/resource-not-foud-error.js'
+import { makeUser } from '@/utils/tests/factories/make-user.js'
+import { randomUUID } from 'node:crypto'
 
 let userRepository: InMemoryUsersRepository
 let sut: FindUserByIdUseCase
@@ -17,15 +19,7 @@ describe('Get User Profile Use-Case', () => {
     it('should be able to get user profile', async () => {
 
 
-        const createdUser = await userRepository.create({
-            username: 'jhon.doe',
-            zendesk_user_id: 12,
-            fullname: "Jhon Doe",
-            email: 'johndoe@example.com',
-            password: '123456',
-            phone: "1699999999",
-            status: true,
-        })
+        const createdUser = await userRepository.create(await makeUser(undefined, undefined, 'jhon.doe'))
 
         const { user } = await sut.execute({
             userId: createdUser.id,
@@ -37,19 +31,11 @@ describe('Get User Profile Use-Case', () => {
 
     it('should not be able to get user profile with wrong id', async () => {
 
-        const createdUser = await userRepository.create({
-            username: 'jhon.doe',
-            zendesk_user_id: 12,
-            fullname: "Jhon Doe",
-            email: 'johndoe@example.com',
-            password: '123456',
-            phone: "1699999999",
-            status: true,
-        })
+        const createdUser = await userRepository.create(await makeUser())
 
         await expect(() =>
             sut.execute({
-                'userId': 54
+                'userId': randomUUID()
             }),
         ).rejects.toBeInstanceOf(ResourceNotFoundError)
 

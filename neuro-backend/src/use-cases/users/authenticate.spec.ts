@@ -2,6 +2,7 @@ import { expect, it, describe, beforeEach } from 'vitest'
 import { AuthenticateUseCase } from './authenticate.js'
 import { InMemoryUsersRepository } from '@/repositories/in-memory/in-memory-user-repository.js'
 import { InvalidCredentialsError } from '../_errors/invalid-credentials-error.js'
+import { makeUser } from '@/utils/tests/factories/make-user.js'
 import { hash } from 'bcryptjs'
 
 let userRepository: InMemoryUsersRepository
@@ -17,15 +18,8 @@ describe('Authenticate Use-Case', () => {
 
     it('should be able to athenticate with email', async () => {
 
-        await userRepository.create({
-            username: 'jhon.doe',
-            zendesk_user_id: 12,
-            fullname: "Jhon Doe",
-            email: 'johndoe@example.com',
-            password: await hash('123456', 6),
-            phone: "1699999999",
-            status: true,
-        })
+        const hashedPassword = await hash('123456', 6)
+        await userRepository.create(await makeUser(hashedPassword, 'johndoe@example.com'))
 
         const { user } = await sut.execute({
             email: 'johndoe@example.com',
@@ -33,20 +27,12 @@ describe('Authenticate Use-Case', () => {
         })
 
         expect(user.id).toEqual(expect.any(String))
-        //aqui eu digo basicamente que eu espero que o user id seja igual a qualquer string
     })
 
     it('should be able to athenticate with username', async () => {
 
-        await userRepository.create({
-            username: 'jhon.doe',
-            zendesk_user_id: 12,
-            fullname: "Jhon Doe",
-            email: 'johndoe@example.com',
-            password: await hash('123456', 6),
-            phone: "1699999999",
-            status: true,
-        })
+        const hashedPassword = await hash('123456', 6)
+        await userRepository.create(await makeUser(hashedPassword, 'johndoe@example.com', 'jhon.doe'))
 
         const { user } = await sut.execute({
             username: 'jhon.doe',
@@ -54,11 +40,11 @@ describe('Authenticate Use-Case', () => {
         })
 
         expect(user.id).toEqual(expect.any(String))
-        //aqui eu digo basicamente que eu espero que o user id seja igual a qualquer string
     })
 
     it('should not be able to athenticate with wrong credentials', async () => {
 
+        await userRepository.create(await makeUser('123456', 'test@example.com'))
 
         await expect(() =>
             sut.execute({
@@ -70,6 +56,8 @@ describe('Authenticate Use-Case', () => {
     })
 
     it('should not be able to athenticate with wrong password', async () => {
+
+        await userRepository.create(await makeUser('123456', 'johndoe@example.com'))
 
         await expect(() =>
             sut.execute({

@@ -1,32 +1,24 @@
 import { InMemoryUsersRepository } from '@/repositories/in-memory/in-memory-user-repository.js'
-import {expect, it, describe, beforeEach} from 'vitest'
+import { expect, it, describe, beforeEach } from 'vitest'
 import { FindUserByIdUseCase } from './find-by-id.js'
 import { ResourceNotFoundError } from '../_errors/resource-not-foud-error.js'
 import { ChangeUserStatusUseCase } from './change-user-status.js'
+import { makeUser } from '@/utils/tests/factories/make-user.js'
 
 let userRepository: InMemoryUsersRepository
 let sut: ChangeUserStatusUseCase
 //sut = system under test
 
-describe('Change User Status', () =>{
+describe('Change User Status', () => {
 
-    beforeEach(()=> {
+    beforeEach(() => {
         userRepository = new InMemoryUsersRepository()
-        sut = new ChangeUserStatusUseCase(userRepository) 
+        sut = new ChangeUserStatusUseCase(userRepository)
     })
 
-    it('should be able to change the user status', async () =>{
+    it('should be able to change the user status', async () => {
 
-
-        const createdUser = await userRepository.create({
-            username: 'jhon.doe',
-            zendesk_user_id: 12,
-            fullname: "Jhon Doe",
-            email: 'johndoe@example.com',
-            password: '123456',
-            phone: "1699999999",
-            status: true,
-        })
+        const createdUser = await userRepository.create(await makeUser())
 
         await sut.execute({
             userId: createdUser.id,
@@ -37,21 +29,13 @@ describe('Change User Status', () =>{
         expect(findedUser?.status).toEqual(false)
     })
 
-    it('should not be able to find user with wrong id', async () =>{
+    it('should not be able to find user with wrong id', async () => {
 
-        const createdUser = await userRepository.create({
-            username: 'jhon.doe',
-            zendesk_user_id: 12,
-            fullname: "Jhon Doe",
-            email: 'johndoe@example.com',
-            password: '123456',
-            phone: "1699999999",
-            status: true,
-        })
+        const createdUser = await userRepository.create(await makeUser())
 
-       await expect(() =>
+        await expect(() =>
             sut.execute({
-                'userId': 54
+                'userId': '54'
             }),
         ).rejects.toBeInstanceOf(ResourceNotFoundError)
 

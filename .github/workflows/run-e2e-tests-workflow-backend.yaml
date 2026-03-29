@@ -1,0 +1,38 @@
+name: Run E2E Tests
+
+on: [pull_request]
+
+jobs:
+    run-e2e-tests:
+        name: Run E2E Tests
+        runs-on: ubuntu-latest
+
+        services:
+            postgres:
+                image: bitnami/postgresql
+                ports:
+                    - "5436:5432"
+                env:
+                    POSTGRESQL_USERNAME: admin
+                    POSTGRESQL_PASSWORD: 123456
+                    POSTGRESQL_DATABASE: neurofinance
+
+        steps:
+            - uses: actions/checkout@v3
+
+            - uses: actions/setup-node@v3
+              with:
+                  node-version: "18"
+                  cache: "npm"
+                  cache-dependency-path: backend/package-lock.json
+
+            - name: Install dependencies
+              working-directory: neuro-backend
+              run: npm ci
+
+            - name: Run E2E tests
+              working-directory: neuro-backend
+              run: npm run test:e2e
+              env:
+                  JWT_SECRET: testing
+                  DATABASE_URL: postgresql://admin:123456@localhost:5436/neuro-backend

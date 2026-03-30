@@ -1,5 +1,4 @@
 import { faker } from "@faker-js/faker";
-import { hash } from "bcryptjs";
 
 export async function makeUser(password?: string, email?: string, username?: string, cpf?: string) {
     return {

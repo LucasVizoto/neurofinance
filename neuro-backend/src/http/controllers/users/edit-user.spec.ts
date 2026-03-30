@@ -1,38 +1,36 @@
-import {faker} from '@faker-js/faker'
 import request from 'supertest'
-import {app} from '@/app.js'
+import { app } from '@/app.js'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { randomInt } from 'node:crypto'
 import { createAndAuthenticateUser } from '@/utils/create-and-authenticate-user.js'
 
-describe('Edit User (e2e)', () =>{
+describe('Edit User (e2e)', () => {
 
-    beforeAll( async ()=>{
+    beforeAll(async () => {
         await app.ready()
     })
 
-    afterAll( async ()=>{
+    afterAll(async () => {
         await app.close()
     })
 
-    it('should be able to edit the user infos', async ()=>{
+    it('should be able to edit the user infos', async () => {
 
-        const {token} = await createAndAuthenticateUser(app)
+        const { token } = await createAndAuthenticateUser(app)
 
-        
+
         const response = await request(app.server)
-        .put(`/users`)
-        .set('Authorization', `Bearer ${token}`)
-        .send({
-            fullname: 'John Doe Example',
-            username: 'jhon.doe.username',
-            phone: '16999999999',
-        })
+            .put(`/users`)
+            .set('Authorization', `Bearer ${token}`)
+            .send({
+                fullname: 'John Doe Example',
+                username: 'jhon.doe.username',
+                phone: '16999999999',
+            })
 
         const verifyChanges = await request(app.server)
-        .get('/me')
-        .set('Authorization', `Bearer ${token}`)
-        .send()
+            .get('/me')
+            .set('Authorization', `Bearer ${token}`)
+            .send()
 
         expect(response.statusCode).toEqual(200)
         expect(response.body).toEqual(
@@ -42,7 +40,7 @@ describe('Edit User (e2e)', () =>{
                 user: expect.objectContaining({
                     id: expect.any(Number),
                 }),
-             })
+            })
         )
 
         // Verifying changes

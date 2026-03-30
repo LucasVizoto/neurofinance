@@ -1,8 +1,6 @@
 import request from 'supertest'
 import { app } from '@/app.js'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { faker } from '@faker-js/faker'
-import { randomInt } from 'node:crypto'
 import { makeUser } from '@/utils/tests/factories/make-user.js'
 
 describe('Refresh Token (e2e)', () => {

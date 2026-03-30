@@ -16,20 +16,17 @@ describe('Find By ID (e2e)', () => {
     it('should be able to find an User by his ID', async () => {
 
 
-        const { token } = await createAndAuthenticateUser(app)
-
+        const { token, user } = await createAndAuthenticateUser(app)
 
         const profileResponse = await request(app.server)
             .get('/me')
             .set('Authorization', `Bearer ${token}`)
             .send()
 
-        console.log(profileResponse.body)
-
         expect(profileResponse.statusCode).toEqual(200)
         expect(profileResponse.body.user).toEqual(
             expect.objectContaining({
-                email: 'um@email.ai'
+                email: 'johndoe@example.com'
             })
         )
 

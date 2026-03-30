@@ -1,55 +1,49 @@
 import request from 'supertest'
-import {app} from '@/app.js'
+import { app } from '@/app.js'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { prisma } from '@/lib/prisma.js'
 import { hash } from 'bcryptjs'
 import { createAndAuthenticateUser } from '@/utils/create-and-authenticate-user.js'
+import { makeUser } from '@/utils/tests/factories/make-user.js'
 
-describe('Change User Status (e2e)', () =>{
+describe('Change User Status (e2e)', () => {
 
-    beforeAll( async ()=>{
+    beforeAll(async () => {
         await app.ready()
     })
 
-    afterAll( async ()=>{
+    afterAll(async () => {
         await app.close()
     })
 
-    it('should be able to change the user status to desabled', async ()=>{
+    it('should be able to change the user status to desabled', async () => {
 
-        const {token} = await createAndAuthenticateUser(app, true)
+        const { token } = await createAndAuthenticateUser(app, true)
 
         const user = await prisma.users.create({
-            data:{
-                fullname:'John Doe User',
-                username: 'testingUser',
-                zendesk_user_id: 1,
-                email: 'johndoeUser@example.com',
-                password: await hash('123456', 6),
-                role: 'USER'
-            }
+            data: await makeUser()
         })
 
 
-        
+
         const response = await request(app.server)
-        .patch(`/users/status`)
-        .set('Authorization', `Bearer ${token}`)
-        .send({
-            userId: user.id
-        })
+            .patch(`/users/status`)
+            .set('Authorization', `Bearer ${token}`)
+            .send({
+                userId: user.id
+            })
 
         const verifyChanges = await request(app.server)
-        .get(`/me/byusername/${user.username}`)
-        .set('Authorization', `Bearer ${token}`)
-        .send()
+            .get(`/me/byusername/${user.username}`)
+            .set('Authorization', `Bearer ${token}`)
+            .send()
 
         expect(response.statusCode).toEqual(200)
-         expect(response.body).toEqual(
+        expect(response.body).toEqual(
             expect.objectContaining({
-                success:true
+                success: true
             })
-         )
+        )
 
         // Verifying changes
         expect(verifyChanges.body.user).toEqual(

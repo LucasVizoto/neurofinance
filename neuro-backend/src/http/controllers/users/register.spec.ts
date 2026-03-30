@@ -1,8 +1,6 @@
-import { faker } from '@faker-js/faker'
 import request from 'supertest'
 import { app } from '@/app.js'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { randomInt } from 'node:crypto'
 import { makeUser } from '@/utils/tests/factories/make-user.js'
 
 describe('Register (e2e)', () => {
@@ -20,7 +18,6 @@ describe('Register (e2e)', () => {
             .post('/users')
             .send(await makeUser())
 
-        console.log(response.body)
         expect(response.statusCode).toEqual(201)
         expect.objectContaining({
             message: 'User registered successfully'

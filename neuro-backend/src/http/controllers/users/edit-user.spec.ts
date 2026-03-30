@@ -15,8 +15,7 @@ describe('Edit User (e2e)', () => {
 
     it('should be able to edit the user infos', async () => {
 
-        const { token } = await createAndAuthenticateUser(app)
-
+        const { token, user } = await createAndAuthenticateUser(app)
 
         const response = await request(app.server)
             .put(`/users`)
@@ -38,7 +37,7 @@ describe('Edit User (e2e)', () => {
                 success: true,
                 message: expect.any(String),
                 user: expect.objectContaining({
-                    id: expect.any(Number),
+                    id: expect.any(String),
                 }),
             })
         )

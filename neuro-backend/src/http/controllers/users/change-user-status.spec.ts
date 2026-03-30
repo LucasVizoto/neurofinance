@@ -18,13 +18,7 @@ describe('Change User Status (e2e)', () => {
 
     it('should be able to change the user status to desabled', async () => {
 
-        const { token } = await createAndAuthenticateUser(app, true)
-
-        const user = await prisma.users.create({
-            data: await makeUser()
-        })
-
-
+        const { token, user } = await createAndAuthenticateUser(app)
 
         const response = await request(app.server)
             .patch(`/users/status`)
@@ -45,7 +39,6 @@ describe('Change User Status (e2e)', () => {
             })
         )
 
-        // Verifying changes
         expect(verifyChanges.body.user).toEqual(
             expect.objectContaining({
                 status: false

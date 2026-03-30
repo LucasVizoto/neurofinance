@@ -7,7 +7,6 @@ import { refresh } from "./refresh-token.js";
 import { verifyJWT } from "@/http/middlewares/verify-jwt.js";
 import { editUser } from "./edit-user.js";
 import { changeUserStatus } from "./change-user-status.js";
-import { verifyUserRole } from "@/http/middlewares/verify-user-role.js";
 
 export function userRoutes(app: FastifyInstance) {
 
@@ -15,7 +14,7 @@ export function userRoutes(app: FastifyInstance) {
     app.post('/users', register)
     app.put('/users', { onRequest: [verifyJWT] }, editUser)
     app.get('/me', { onRequest: [verifyJWT] }, findUserById)
-    app.patch('/users/status', { onRequest: [verifyUserRole('ADMIN')] }, changeUserStatus)
+    app.patch('/users/status', { onRequest: [verifyJWT] }, changeUserStatus)
 
     /** User Getters */
     app.get('/me/byusername/:username', { onRequest: [verifyJWT] }, findUserByUsername)

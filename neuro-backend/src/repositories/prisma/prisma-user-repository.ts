@@ -13,10 +13,10 @@ import type { Prisma, Users } from "@/generated/prisma/client.js";
  * buscas e criação de registros de forma persistente, refletindo os dados reais da aplicação.**
  *
  */
-export class PrismaUserRepository implements UsersRepository{
+export class PrismaUserRepository implements UsersRepository {
     async findById(id: string) {
         const user = await prisma.users.findUnique({
-            where:{
+            where: {
                 id: id,
             },
         })
@@ -26,7 +26,7 @@ export class PrismaUserRepository implements UsersRepository{
 
     async findByEmail(email: string) {
         const user = await prisma.users.findUnique({
-            where:{
+            where: {
                 email,
             },
         })
@@ -34,7 +34,17 @@ export class PrismaUserRepository implements UsersRepository{
         return user
     }
 
-    async findByUsername(username: string){
+    async findByCpf(cpf: string) {
+        const user = await prisma.users.findUnique({
+            where: {
+                cpf,
+            },
+        })
+
+        return user
+    }
+
+    async findByUsername(username: string) {
         const user = await prisma.users.findUnique({
             where: {
                 username: username
@@ -44,28 +54,28 @@ export class PrismaUserRepository implements UsersRepository{
         return user
     }
 
-    async create(data: Prisma.UsersCreateInput){
+    async create(data: Prisma.UsersCreateInput) {
         const user = await prisma.users.create({
             data,
         })
-    
+
         return user
     }
 
-    async changeUserStatus(user: Users){
+    async changeUserStatus(user: Users) {
         await prisma.users.update({
             where: {
                 id: user.id,
             },
-            data:{
+            data: {
                 status: false
             }
         })
     }
 
-    async save(user: Users){
+    async save(user: Users) {
         await prisma.users.update({
-            data:{
+            data: {
                 cpf: user.cpf,
                 customColor: user.customColor,
                 preferenceTicker: user.preferenceTicker,

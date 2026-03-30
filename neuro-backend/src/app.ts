@@ -15,7 +15,7 @@ app.register(fastifyJwt, {
         cookieName: 'refreshToken',
         signed: false, // estou definindo que o cookie não será assinado, nn tem o processo de hashing
     },
-    sign:{
+    sign: {
         expiresIn: '50m',
     }
 })
@@ -25,8 +25,8 @@ app.register(fastifyCookie)
 
 //CORS
 app.register(fastifyCors, {
-    origin: true, 
-    credentials: true, 
+    origin: true,
+    credentials: true,
 })
 
 //*********REGISTRO DE ROTAS*********//
@@ -34,12 +34,14 @@ app.register(userRoutes)
 
 
 //*********HANDLER DE ERROS*********//
-app.setErrorHandler((error, _request, reply)=>{
-    if (error instanceof ZodError){
+app.setErrorHandler((error, _request, reply) => {
+    if (error instanceof ZodError) {
         console.log(error.format())
         return reply
-        .status(400)
-        .send({message: 'Validation error', issues: error.format()})
+            .status(400)
+            .send({ message: 'Validation error', issues: error.format() })
     }
-    return reply.status(500).send({message: 'Internal Server Error'})
+    return reply.status(500).send({
+        message: 'Internal Server Error'
+    })
 })

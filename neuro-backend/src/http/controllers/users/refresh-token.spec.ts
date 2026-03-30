@@ -1,45 +1,38 @@
 import request from 'supertest'
-import {app} from '@/app.js'
+import { app } from '@/app.js'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { faker } from '@faker-js/faker'
 import { randomInt } from 'node:crypto'
+import { makeUser } from '@/utils/tests/factories/make-user.js'
 
-describe('Refresh Token (e2e)', () =>{
+describe('Refresh Token (e2e)', () => {
 
-    beforeAll( async ()=>{
+    beforeAll(async () => {
         await app.ready()
     })
 
-    afterAll( async ()=>{
+    afterAll(async () => {
         await app.close()
     })
 
-    it('should be able to refresh a Token', async ()=>{
+    it('should be able to refresh a Token', async () => {
         await request(app.server)
-        .post('/users')
-        .send({
-            zendesk_user_id: randomInt(50),
-            fullname: faker.person.fullName(),
-            username: faker.internet.username(),
-            phone: faker.phone.number(),
-            status:true,
-            email: 'johndoe@example.com',
-            password: '123456'
-        })
+            .post('/users')
+            .send(await makeUser('123456', 'johndoe@example.com'))
 
         const authResponse = await request(app.server)
-        .post('/auth')
-        .send({
-            email: 'johndoe@example.com',
-            password:'123456',
-        })
+            .post('/auth')
+            .send({
+                email: 'johndoe@example.com',
+                password: '123456',
+            })
 
         const cookies = authResponse.get('Set-Cookie')!
 
         const response = await request(app.server)
-        .patch('/token/refresh')
-        .set('Cookie', cookies)
-        .send()
+            .patch('/token/refresh')
+            .set('Cookie', cookies)
+            .send()
 
         expect(response.statusCode).toEqual(200)
         expect(response.body).toEqual({

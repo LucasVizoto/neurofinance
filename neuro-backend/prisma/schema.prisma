@@ -37,7 +37,7 @@ model Users {
 
 model Chats {
   id             Int       @id @default(autoincrement())
-  userId         Int       @map("user_id")
+  userId         String    @map("user_id")
   mongo_id       String    @map("mongo_id")
   status         Boolean   @default(true)
   initialContext String    @map("initial_context")

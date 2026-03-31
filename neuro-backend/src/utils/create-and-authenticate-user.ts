@@ -6,7 +6,7 @@ import { hash } from 'bcryptjs'
 
 export async function createAndAuthenticateUser(app: FastifyInstance, isAdmin = false) {
     const user = await prisma.users.create({
-        data: await makeUser(await hash('123456', 6), 'johndoe@example.com')
+        data: await makeUser({ password: await hash('123456', 6), email: 'johndoe@example.com' })
     })
 
     const authResponse = await request(app.server)

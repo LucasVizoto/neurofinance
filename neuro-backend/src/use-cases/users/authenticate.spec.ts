@@ -19,7 +19,7 @@ describe('Authenticate Use-Case', () => {
     it('should be able to athenticate with email', async () => {
 
         const hashedPassword = await hash('123456', 6)
-        await userRepository.create(await makeUser(hashedPassword, 'johndoe@example.com'))
+        await userRepository.create(await makeUser({ password: hashedPassword, email: 'johndoe@example.com' }))
 
         const { user } = await sut.execute({
             email: 'johndoe@example.com',
@@ -32,7 +32,7 @@ describe('Authenticate Use-Case', () => {
     it('should be able to athenticate with username', async () => {
 
         const hashedPassword = await hash('123456', 6)
-        await userRepository.create(await makeUser(hashedPassword, 'johndoe@example.com', 'jhon.doe'))
+        await userRepository.create(await makeUser({ password: hashedPassword, email: 'johndoe@example.com', username: 'jhon.doe' }))
 
         const { user } = await sut.execute({
             username: 'jhon.doe',
@@ -44,7 +44,7 @@ describe('Authenticate Use-Case', () => {
 
     it('should not be able to athenticate with wrong credentials', async () => {
 
-        await userRepository.create(await makeUser('123456', 'test@example.com'))
+        await userRepository.create(await makeUser({ password: '123456', email: 'test@example.com' }))
 
         await expect(() =>
             sut.execute({
@@ -57,7 +57,7 @@ describe('Authenticate Use-Case', () => {
 
     it('should not be able to athenticate with wrong password', async () => {
 
-        await userRepository.create(await makeUser('123456', 'johndoe@example.com'))
+        await userRepository.create(await makeUser({ password: '123456', email: 'johndoe@example.com' }))
 
         await expect(() =>
             sut.execute({

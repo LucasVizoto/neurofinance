@@ -1,10 +1,7 @@
 import request from 'supertest'
 import { app } from '@/app.js'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { prisma } from '@/lib/prisma.js'
-import { hash } from 'bcryptjs'
 import { createAndAuthenticateUser } from '@/utils/create-and-authenticate-user.js'
-import { makeUser } from '@/utils/tests/factories/make-user.js'
 
 describe('Change User Status (e2e)', () => {
 

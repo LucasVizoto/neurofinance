@@ -26,7 +26,7 @@ describe('Register Use-Case', () => {
 
     it('should hash user password upon registration', async () => {
 
-        const { user } = await sut.execute(await makeUser('123456'))
+        const { user } = await sut.execute(await makeUser({ password: '123456' }))
 
         const isPassowrdCorrectlyHashed = await compare(
             '123456',
@@ -43,10 +43,10 @@ describe('Register Use-Case', () => {
 
         const email = 'johndoe@example.com'
 
-        await sut.execute(await makeUser(undefined, email))
+        await sut.execute(await makeUser({ email: email }))
 
         await expect(async () =>
-            sut.execute(await makeUser(undefined, email)),
+            sut.execute(await makeUser({ email: email })),
         ).rejects.toBeInstanceOf(UserAlreadyExistsError)
     })
 
@@ -54,10 +54,10 @@ describe('Register Use-Case', () => {
 
         const username = 'johndoe'
 
-        await sut.execute(await makeUser(undefined, undefined, username))
+        await sut.execute(await makeUser({ username: username }))
 
         await expect(async () =>
-            sut.execute(await makeUser(undefined, undefined, username)),
+            sut.execute(await makeUser({ username: username })),
         ).rejects.toBeInstanceOf(UserAlreadyExistsError)
     })
 
@@ -65,10 +65,10 @@ describe('Register Use-Case', () => {
 
         const cpf = '12345678901'
 
-        await sut.execute(await makeUser(undefined, undefined, undefined, cpf))
+        await sut.execute(await makeUser({ cpf: cpf }))
 
         await expect(async () =>
-            sut.execute(await makeUser(undefined, undefined, undefined, cpf)),
+            sut.execute(await makeUser({ cpf: cpf })),
         ).rejects.toBeInstanceOf(UserAlreadyExistsError)
     })
 })

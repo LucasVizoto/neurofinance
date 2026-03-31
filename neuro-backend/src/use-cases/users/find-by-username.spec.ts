@@ -18,7 +18,7 @@ describe('Get User Profile Use-Case', () => {
     it('should be able to get user profile using username filed', async () => {
 
 
-        const createdUser = await userRepository.create(await makeUser(undefined, undefined, 'jhon.doe'))
+        const createdUser = await userRepository.create(await makeUser({ username: 'jhon.doe' }))
 
         const { user } = await sut.execute({
             username: createdUser.username,
@@ -30,7 +30,7 @@ describe('Get User Profile Use-Case', () => {
 
     it('should not be able to get user profile with wrong username', async () => {
 
-        const createdUser = await userRepository.create(await makeUser(undefined, undefined, 'jhon.doe'))
+        const createdUser = await userRepository.create(await makeUser({ username: 'jhon.doe' }))
 
         await expect(() =>
             sut.execute({

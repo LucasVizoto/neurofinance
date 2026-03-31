@@ -1,18 +1,25 @@
 import { faker } from "@faker-js/faker";
 
-export async function makeUser(password?: string, email?: string, username?: string, cpf?: string) {
+export type MakeUserParams = {
+    password?: string
+    email?: string
+    username?: string
+    cpf?: string
+}
+
+export async function makeUser(params: MakeUserParams = {}) {
     return {
-        cpf: cpf ? cpf : faker.string.numeric(11),
+        cpf: params.cpf ? params.cpf : faker.string.numeric(11),
         customColor: null,
         preferenceTicker: 'GOOG',
         profileImageName: null,
         profileImageUrl: null,
         theme: null,
         fullname: faker.person.fullName(),
-        username: username ? username : faker.internet.username(),
+        username: params.username ? params.username : faker.internet.username(),
         phone: faker.phone.number(),
         status: true,
-        email: email ? email : faker.internet.email(),
-        password: password ? password : faker.internet.password()
+        email: params.email ? params.email : faker.internet.email(),
+        password: params.password ? params.password : faker.internet.password()
     }
 }

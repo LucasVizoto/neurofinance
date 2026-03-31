@@ -19,7 +19,7 @@ describe('Get User Profile Use-Case', () => {
     it('should be able to get user profile', async () => {
 
 
-        const createdUser = await userRepository.create(await makeUser(undefined, undefined, 'jhon.doe'))
+        const createdUser = await userRepository.create(await makeUser({ username: 'jhon.doe' }))
 
         const { user } = await sut.execute({
             userId: createdUser.id,

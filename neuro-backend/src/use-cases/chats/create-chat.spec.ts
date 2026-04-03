@@ -5,6 +5,7 @@ import { CreateChatUseCase } from './create-chat.js'
 import { InMemoryChatsRepository } from '@/repositories/in-memory/in-memory-chats-repository.js'
 import { makeChat } from '@/utils/tests/factories/make-chat.js'
 import { ResourceNotFoundError } from '../_errors/resource-not-foud-error.js'
+import { UserHas5ChatsError } from '../_errors/user-has-5-chats-error.js'
 
 let userRepository: InMemoryUsersRepository
 let chatRepository: InMemoryChatsRepository
@@ -36,5 +37,22 @@ describe('Create Chat Use-Case', () => {
         await expect(async () =>
             sut.execute(await makeChat({ userId: mockedUserId })),
         ).rejects.toBeInstanceOf(ResourceNotFoundError)
+    })
+
+    it('should not be able to create a chat for a user who already has 5 chats', async () => {
+
+        const user = await userRepository.create(await makeUser())
+
+        // Create 5 chats for the user
+        for (let i = 0; i < 5; i++) {
+            await chatRepository.create(await makeChat({ userId: user.id }))
+        }
+
+        await expect(async () =>
+            sut.execute(await makeChat({ userId: user.id })),
+        ).rejects.toBeInstanceOf(UserHas5ChatsError)
+
+        const validate = await chatRepository.findByUserId(user.id)
+        expect(validate.length).toEqual(5)
     })
 })

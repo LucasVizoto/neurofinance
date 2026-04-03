@@ -53,4 +53,11 @@ export class InMemoryChatsRepository implements ChatsRepository {
         return chat
     }
 
+    async delete(chat: Chats): Promise<void> {
+        const chatIndex = this.items.findIndex((item) => item.id === chat.id)
+        if (chatIndex !== -1) {
+            this.items.splice(chatIndex, 1)
+        }
+    }
+
 }

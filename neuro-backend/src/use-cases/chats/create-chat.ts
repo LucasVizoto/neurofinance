@@ -26,8 +26,8 @@ export class CreateChatUseCase {
             throw new ResourceNotFoundError()
         }
 
-        //TODO - Verificar se o usuário já tem 5 chats, caso tenha, lançar um erro
-        if (false) {
+        const userChats = await this.chatRepository.findByUserId(userId)
+        if (userChats.length == 5) {
             throw new UserHas5ChatsError()
         }
 

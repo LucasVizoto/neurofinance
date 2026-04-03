@@ -5,4 +5,5 @@ export interface ChatsRepository {
     findByUserId(userId: string): Promise<Chats[]>
     findByMongoId(mongo_id: string): Promise<Chats | null>
     create(data: Prisma.ChatsCreateInput): Promise<Chats>
+    delete(chat: Chats): Promise<void>
 }

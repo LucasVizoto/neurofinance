@@ -1,7 +1,6 @@
-import { randomInt, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import type { UsersRepository } from "../user-repository.js";
 import { type Prisma, type Users } from "@/generated/prisma/client.js";
-import { hash } from "bcryptjs";
 
 export class InMemoryUsersRepository implements UsersRepository {
 

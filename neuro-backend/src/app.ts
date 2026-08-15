@@ -2,6 +2,7 @@ import fastify from "fastify";
 import { ZodError } from "zod";
 import { env } from "./env/index.js";
 import { userRoutes } from "./http/controllers/users/routes.js";
+import { chatRoutes } from "./http/controllers/chats/routes.js";
 import fastifyJwt from "@fastify/jwt";
 import fastifyCookie from "@fastify/cookie";
 import fastifyCors from "@fastify/cors";
@@ -31,6 +32,7 @@ app.register(fastifyCors, {
 
 //*********REGISTRO DE ROTAS*********//
 app.register(userRoutes)
+app.register(chatRoutes)
 
 
 //*********HANDLER DE ERROS*********//

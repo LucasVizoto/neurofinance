@@ -1,3 +1,5 @@
 # Virutal Enviroment
 /venv
 .env
+
+/static/stock_details_5_years.csv

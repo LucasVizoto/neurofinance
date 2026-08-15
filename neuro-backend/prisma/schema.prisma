@@ -47,3 +47,4 @@ model Chats {
 
   @@map("chats")
 }
+

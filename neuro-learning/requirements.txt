@@ -1,0 +1,43 @@
+﻿# ──────────────────────────────────────────────────────────────────────────────
+# requirements.txt — NeuroFinance Quant
+# Dependências diretas do notebook neurofinance_quant.ipynb
+# Gerado em: 2026-06-06
+# ──────────────────────────────────────────────────────────────────────────────
+
+# ── Ambiente Jupyter ──────────────────────────────────────────────────────────
+ipykernel==7.2.0
+jupyter_client==8.8.0
+jupyter_core==5.9.1
+matplotlib-inline==0.2.1
+
+# ── Ciência de Dados ──────────────────────────────────────────────────────────
+numpy==2.4.4
+pandas==3.0.2
+matplotlib==3.10.9
+scipy==1.17.1
+
+# ── Machine Learning ─────────────────────────────────────────────────────────
+scikit-learn==1.8.0
+joblib==1.5.3
+threadpoolctl==3.6.0
+
+# ── Deep Learning ────────────────────────────────────────────────────────────
+torch==2.12.0
+
+# ── HTTP / API ────────────────────────────────────────────────────────────────
+requests==2.33.1
+httpx==0.28.1
+
+# ── Utilitários ───────────────────────────────────────────────────────────────
+python-dotenv==1.2.2
+
+# ── Dependências transitivas pinadas ─────────────────────────────────────────
+certifi==2026.4.22
+charset-normalizer==3.4.7
+idna==3.13
+urllib3==2.6.3
+python-dateutil==2.9.0.post0
+pytz==2026.1.post1
+tzdata==2026.2
+six==1.17.0
+packaging==26.2

@@ -51,8 +51,8 @@ export type Config = {
 
 const themeConfig: Config = {
   templateName: 'NeuroFinance', // App Name
-  homePageUrl: '/home',
-  settingsCookieName: 'sneat-mui-next-demo-1',
+  homePageUrl: '/dashboard',
+  settingsCookieName: 'neurofinance-mui-next-demo-1',
   mode: 'system', // 'system', 'light', 'dark'
   skin: 'default', // 'default', 'bordered'
   semiDark: false, // true, false

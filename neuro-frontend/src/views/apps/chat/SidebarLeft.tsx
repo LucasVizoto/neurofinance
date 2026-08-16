@@ -20,7 +20,7 @@ import type { ChatDataType, StatusObjType } from '@/types/apps/chatTypes'
 import type { AppDispatch } from '@/redux-store'
 
 // Slice Imports
-import { addNewChat } from '@/redux-store/slices/chat'
+// import { addNewChat } from '@/redux-store/slices/chat'
 
 // Component Imports
 import CustomAvatar from '@core/components/mui/Avatar'
@@ -68,9 +68,9 @@ const renderChat = (props: RenderChatType) => {
   // Props
   const { chatStore, getActiveUserData, setSidebarOpen, backdropOpen, setBackdropOpen, isBelowMdScreen } = props
 
-  return chatStore.chats.map(chat => {
+  return chatStore.chats.map((chat: any) => {
     const contact = chatStore.contacts.find(contact => contact.id === chat.userId) || chatStore.contacts[0]
-    const isChatActive = chatStore.activeUser?.id === contact.id
+    const isChatActive = chatStore.activeChatId === chat.mongoId
 
     return (
       <li
@@ -80,6 +80,9 @@ const renderChat = (props: RenderChatType) => {
           'text-[var(--mui-palette-primary-contrastText)]': isChatActive
         })}
         onClick={() => {
+          // fetch chat history if needed, or simply set active chat
+          props.dispatch({ type: 'chat/setActiveChat', payload: chat.mongoId })
+          props.dispatch({ type: 'chat/fetchChatHistory', payload: chat.mongoId } as any)
           getActiveUserData(chat.userId)
           isBelowMdScreen && setSidebarOpen(false)
           isBelowMdScreen && backdropOpen && setBackdropOpen(false)
@@ -93,7 +96,7 @@ const renderChat = (props: RenderChatType) => {
           color={contact.avatarColor}
         />
         <div className='min-is-0 flex-auto'>
-          <Typography color='inherit'>{contact?.fullName}</Typography>
+          <Typography color='inherit'>{chat.title || contact?.fullName}</Typography>
           {chat.chat.length ? (
             <Typography variant='body2' color={isChatActive ? 'inherit' : 'text.secondary'} className='truncate'>
               {chat.chat[chat.chat.length - 1].message}
@@ -152,10 +155,10 @@ const SidebarLeft = (props: Props) => {
 
   const handleChange = (event: any, newValue: string | null) => {
     setSearchValue(newValue)
-    dispatch(addNewChat({ id: chatStore.contacts.find(contact => contact.fullName === newValue)?.id }))
-    getActiveUserData(
-      chatStore.contacts.find(contact => contact.fullName === newValue)?.id || (chatStore.activeUser?.id as number)
-    )
+    // Dispatch createNewChat
+    const token = localStorage.getItem('token') || ''
+    props.dispatch({ type: 'chat/createNewChat', payload: { title: 'Nova Análise ' + new Date().toLocaleTimeString(), token } } as any)
+    
     isBelowMdScreen && setSidebarOpen(false)
     setBackdropOpen(false)
     setSearchValue(null)
@@ -195,62 +198,28 @@ const SidebarLeft = (props: Props) => {
             }}
           />
           <div className='flex is-full items-center flex-auto sm:gap-x-3'>
-            <Autocomplete
+            <Button
               fullWidth
-              size='small'
-              id='select-contact'
-              options={chatStore.contacts.map(contact => contact.fullName) || []}
-              value={searchValue || null}
-              onChange={handleChange}
-              renderInput={params => (
-                <CustomTextField
-                  {...params}
-                  variant='outlined'
-                  placeholder='Search Contacts'
-                  sx={{ '& .MuiFilledInput-root': { borderRadius: '999px !important' } }}
-                  slotProps={{
-                    input: {
-                      ...params.InputProps,
-                      startAdornment: (
-                        <InputAdornment position='start' className='mli-1'>
-                          <i className='bx-search' />
-                        </InputAdornment>
-                      )
-                    }
-                  }}
-                />
-              )}
-              renderOption={(props, option) => {
-                const contact = chatStore.contacts.find(contact => contact.fullName === option)
+              variant="contained"
+              color="primary"
+              onClick={() => {
+                if (chatStore.chats.length >= 5) {
+                  import('react-toastify').then(({ toast }) => {
+                    toast.error('Limite máximo de 5 chats simultâneos atingido. Por favor, exclua um chat para continuar.', { autoClose: 5000 })
+                  })
+                  return
+                }
 
-                return (
-                  <li
-                    {...props}
-                    key={option.toLowerCase().replace(/\s+/g, '-')}
-                    className={classnames('gap-3 max-sm:pli-3', props.className)}
-                  >
-                    {contact ? (
-                      contact.avatar ? (
-                        <Avatar
-                          alt={contact.fullName}
-                          src={contact.avatar}
-                          key={option.toLowerCase().replace(/\s+/g, '-')}
-                        />
-                      ) : (
-                        <CustomAvatar
-                          color={contact.avatarColor as ThemeColor}
-                          skin='light'
-                          key={option.toLowerCase().replace(/\s+/g, '-')}
-                        >
-                          {getInitials(contact.fullName)}
-                        </CustomAvatar>
-                      )
-                    ) : null}
-                    {option}
-                  </li>
-                )
+                const token = localStorage.getItem('token') || ''
+                // @ts-ignore
+                props.dispatch({ type: 'chat/createNewChat', payload: { title: 'Nova Análise ' + new Date().toLocaleTimeString(), token } })
+                isBelowMdScreen && setSidebarOpen(false)
+                setBackdropOpen(false)
               }}
-            />
+              startIcon={<i className='bx-plus' />}
+            >
+              Nova Consulta
+            </Button>
             {isBelowMdScreen ? (
               <IconButton
                 className='mis-2'

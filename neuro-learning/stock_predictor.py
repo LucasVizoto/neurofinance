@@ -249,10 +249,19 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
 
     # ── Remoção de NaNs (períodos de warm-up dos indicadores)
     before = len(feat)
+    
+    # Salvar a última linha (que tem Target=NaN) para inferência futura
+    inference_row = feat.iloc[[-1]].copy()
+    
     feat = feat.dropna()
     print(f"  Linhas removidas (warm-up de indicadores): {before - len(feat)}")
     print(f"  Dataset final com features: {len(feat):,} dias úteis")
     print(f"  Distribuição do Target: Alta={feat['Target'].sum()} | Baixa/Manter={( feat['Target']==0).sum()}")
+
+    # Adicionar o inference_row ao atributo do módulo para acesso fácil
+    import sys
+    this_module = sys.modules[__name__]
+    this_module.LATEST_INFERENCE_ROW = inference_row
 
     return feat
 

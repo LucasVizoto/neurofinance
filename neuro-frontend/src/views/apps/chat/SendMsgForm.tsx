@@ -22,7 +22,7 @@ import type { ContactType } from '@/types/apps/chatTypes'
 import type { AppDispatch } from '@/redux-store'
 
 // Slice Imports
-import { sendMsg } from '@/redux-store/slices/chat'
+import { sendMessage } from '@/redux-store/slices/chat'
 
 // Component Imports
 import CustomIconButton from '@core/components/mui/IconButton'
@@ -30,61 +30,12 @@ import CustomIconButton from '@core/components/mui/IconButton'
 type Props = {
   dispatch: AppDispatch
   activeUser: ContactType
+  activeChatId?: string | null
   isBelowSmScreen: boolean
   messageInputRef: RefObject<HTMLDivElement>
 }
-
-// Emoji Picker Component for selecting emojis
-const EmojiPicker = ({
-  onChange,
-  isBelowSmScreen,
-  openEmojiPicker,
-  setOpenEmojiPicker,
-  anchorRef
-}: {
-  onChange: (value: string) => void
-  isBelowSmScreen: boolean
-  openEmojiPicker: boolean
-  setOpenEmojiPicker: (value: boolean | ((prevVar: boolean) => boolean)) => void
-  anchorRef: RefObject<HTMLButtonElement>
-}) => {
-  return (
-    <>
-      <Popper
-        open={openEmojiPicker}
-        transition
-        disablePortal
-        placement='top-start'
-        className='z-[12]'
-        anchorEl={anchorRef.current}
-      >
-        {({ TransitionProps, placement }) => (
-          <Fade {...TransitionProps} style={{ transformOrigin: placement === 'top-start' ? 'right top' : 'left top' }}>
-            <Paper>
-              <ClickAwayListener onClickAway={() => setOpenEmojiPicker(false)}>
-                <span>
-                  <Picker
-                    emojiSize={18}
-                    theme='light'
-                    data={data}
-                    maxFrequentRows={1}
-                    onEmojiSelect={(emoji: any) => {
-                      onChange(emoji.native)
-                      setOpenEmojiPicker(false)
-                    }}
-                    {...(isBelowSmScreen && { perLine: 8 })}
-                  />
-                </span>
-              </ClickAwayListener>
-            </Paper>
-          </Fade>
-        )}
-      </Popper>
-    </>
-  )
-}
-
-const SendMsgForm = ({ dispatch, activeUser, isBelowSmScreen, messageInputRef }: Props) => {
+//... skipping EmojiPicker for diff, replacing only SendMsgForm Props
+const SendMsgForm = ({ dispatch, activeUser, activeChatId, isBelowSmScreen, messageInputRef }: Props) => {
   // States
   const [msg, setMsg] = useState('')
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
@@ -111,8 +62,9 @@ const SendMsgForm = ({ dispatch, activeUser, isBelowSmScreen, messageInputRef }:
   const handleSendMsg = (event: FormEvent | KeyboardEvent, msg: string) => {
     event.preventDefault()
 
-    if (msg.trim() !== '') {
-      dispatch(sendMsg({ msg }))
+    if (msg.trim() !== '' && activeChatId) {
+      const token = localStorage.getItem('token') || ''
+      dispatch(sendMessage({ mongoId: activeChatId, message: msg, token }))
       setMsg('')
     }
   }

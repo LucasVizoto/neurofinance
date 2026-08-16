@@ -65,16 +65,14 @@ async function bootstrap() {
   );
 
   const config = new DocumentBuilder()
-    .setTitle('Marketplace API Gateway')
+    .setTitle('NeuroFinance API Gateway')
     .setDescription(
       `
-      API Gateway para o sistema de Marketplace com microserviços
+      API Gateway para o sistema de Inteligência Artificial NeuroFinance
 
       Serviços Disponíveis:
-      - Users Service: Autenticação e gestão de usuários
-      - Products Service: Catálogo e gestão de produtos
-      - Checkout Service: Carrinho e processamento de pedidos
-      - Payments Service: Processamento de pagamentos
+      - Users Service: Autenticação, gestão de usuários e chats
+      - AI Service: Integração com Modelos de ML e Chat Conversacional (Gemini)
 
       Autenticação:
       - Use JWT Bearer token para rotas protegidas
@@ -109,16 +107,15 @@ async function bootstrap() {
     )
     .addTag('Authentication', 'Endpoints relacionados à autenticação e autorização')
     .addTag('Users', 'Endpoints relacionados à gestão de usuários')
-    .addTag('Products', 'Endpoints relacionados à gestão do catálogo de produtos')
-    .addTag('Checkout', 'Endpoints relacionados ao carrinho e processamento de pedidos')
-    .addTag('Payments', 'Endpoints relacionados ao processamento de pagamentos')
+    .addTag('Chats', 'Endpoints relacionados à gestão de conversas do usuário')
+    .addTag('AI & Machine Learning', 'Endpoints para integração com predições quantitativas e Gemini')
     .addTag('Health', 'Endpoints relacionados à saúde do sistema')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document, {
     swaggerOptions: {},
-    customSiteTitle: 'Marketplace API Gateway Documentation',
+    customSiteTitle: 'NeuroFinance API Gateway Documentation',
     customCss: `
       .swagger-ui .topbar { display: none }
       .swagger-ui .info .title { color: #3b82f6 }

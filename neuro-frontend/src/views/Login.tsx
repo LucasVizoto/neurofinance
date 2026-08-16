@@ -84,9 +84,42 @@ const LoginV2 = () => {
           <form
             noValidate
             autoComplete='off'
-            onSubmit={e => {
+            onSubmit={async e => {
               e.preventDefault()
-              router.push('/')
+              const email = (e.currentTarget.elements[0] as HTMLInputElement).value
+              const password = (e.currentTarget.elements[2] as HTMLInputElement).value
+              try {
+                const response = await fetch('http://localhost:3005/auth/login', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ email, password })
+                })
+                if (response.ok) {
+                  const data = await response.json()
+                  localStorage.setItem('token', data.accessToken)
+                  localStorage.setItem('userId', data.user.id)
+                  router.push('/')
+                } else {
+                  alert('Login failed. Registering...')
+                  // Auto register for dev
+                  const regResponse = await fetch('http://localhost:3005/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: 'Admin', email, password })
+                  })
+                  if (regResponse.ok) {
+                    const data = await regResponse.json()
+                    localStorage.setItem('token', data.accessToken)
+                    localStorage.setItem('userId', data.user.id)
+                    router.push('/')
+                  } else {
+                    alert('Register failed too.')
+                  }
+                }
+              } catch (err) {
+                console.error(err)
+                alert('API error')
+              }
             }}
             className='flex flex-col gap-5'
           >

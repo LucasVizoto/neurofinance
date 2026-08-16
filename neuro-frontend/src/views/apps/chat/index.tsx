@@ -16,7 +16,8 @@ import { useDispatch, useSelector } from 'react-redux'
 import type { RootState } from '@/redux-store'
 
 // Slice Imports
-import { getActiveUserData } from '@/redux-store/slices/chat'
+import { getActiveUserData, fetchChats } from '@/redux-store/slices/chat'
+import type { AppDispatch } from '@/redux-store'
 
 // Component Imports
 import SidebarLeft from './SidebarLeft'
@@ -38,11 +39,19 @@ const ChatWrapper = () => {
 
   // Hooks
   const { settings } = useSettings()
-  const dispatch = useDispatch()
+  const dispatch = useDispatch<AppDispatch>()
   const chatStore = useSelector((state: RootState) => state.chatReducer)
   const isBelowLgScreen = useMediaQuery((theme: Theme) => theme.breakpoints.down('lg'))
   const isBelowMdScreen = useMediaQuery((theme: Theme) => theme.breakpoints.down('md'))
   const isBelowSmScreen = useMediaQuery((theme: Theme) => theme.breakpoints.down('sm'))
+
+  // Fetch chats on mount
+  useEffect(() => {
+    const userId = localStorage.getItem('userId')
+    if (userId) {
+      dispatch(fetchChats(userId))
+    }
+  }, [dispatch])
 
   // Get active user’s data
   const activeUser = (id: number) => {

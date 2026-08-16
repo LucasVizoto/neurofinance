@@ -38,6 +38,7 @@ export type UserChatType = {
 export type ChatType = {
   id: number
   userId: number
+  mongoId?: string
   unseenMsgs: number
   chat: UserChatType[]
 }

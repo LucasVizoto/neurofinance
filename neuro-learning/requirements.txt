@@ -1,4 +1,4 @@
-﻿# ──────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────
 # requirements.txt — NeuroFinance Quant
 # Dependências diretas do notebook neurofinance_quant.ipynb
 # Gerado em: 2026-06-06
@@ -41,3 +41,11 @@ pytz==2026.1.post1
 tzdata==2026.2
 six==1.17.0
 packaging==26.2
+
+# ── API & LLM (Adicionado para Flask e Gemini) ────────────────────────────────
+Flask>=3.0.0
+flask-cors>=4.0.0
+langchain>=0.3.0
+langchain-google-genai>=2.0.0
+langchain-mongodb>=0.2.0
+pymongo>=4.8.0

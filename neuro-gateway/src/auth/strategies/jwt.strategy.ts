@@ -20,10 +20,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     async validate(payload: JwtPayload) {
-        if (!payload) throw new UnauthorizedException('Invalid JWT token');
-        const user = await this.authService.validateJwtToken(payload.token);
-        if (!user) throw new UnauthorizedException();
-
-        return { userId: payload.sub, email: payload.email, role: payload.role };
+        if (!payload || !payload.sub) throw new UnauthorizedException('Invalid JWT token');
+        // passport-jwt already verified the token signature. We just extract user info from the payload.
+        return { userId: payload.sub, email: payload.email ?? null, role: payload.role ?? null };
     }
 }

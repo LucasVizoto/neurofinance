@@ -1,5 +1,5 @@
 import { HttpService } from '@nestjs/axios';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { HttpException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { firstValueFrom } from 'rxjs';
 import { serviceConfig } from 'src/config/gateway.config';
@@ -42,28 +42,34 @@ export class AuthService {
         try {
             const { data } = await firstValueFrom(
                 this.httpService.post(
-                    `${serviceConfig.users.url}/login`,
+                    `${serviceConfig.users.url}/auth`,
                     loginDto,
                     { timeout: serviceConfig.users.timeout },
                 )
             )
             return data;
-        } catch (error) {
-            throw new UnauthorizedException('Invalid credentials')
+        } catch (error: any) {
+            if (error.response) {
+                throw new HttpException(error.response.data, error.response.status);
+            }
+            throw new InternalServerErrorException('Gateway error: ' + error.message);
         }
     }
     async register(registerDto: RegisterDto): Promise<AuthResponse> {
         try {
             const { data } = await firstValueFrom(
                 this.httpService.post(
-                    `${serviceConfig.users.url}/auth/register`,
+                    `${serviceConfig.users.url}/users`,
                     registerDto,
                     { timeout: serviceConfig.users.timeout },
                 ),
             );
             return data;
-        } catch (error) {
-            throw new UnauthorizedException('Registration failed')
+        } catch (error: any) {
+            if (error.response) {
+                throw new HttpException(error.response.data, error.response.status);
+            }
+            throw new InternalServerErrorException('Gateway error: ' + error.message);
         }
     }
 }

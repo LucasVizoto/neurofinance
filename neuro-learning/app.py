@@ -3,9 +3,12 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from services.predict_service import get_prediction
 from services.chat_service import chat_with_agent, get_chat_history_messages
+from routes.dashboard_routes import dashboard_bp
 
 app = Flask(__name__)
 CORS(app)
+
+app.register_blueprint(dashboard_bp)
 
 @app.route('/health', methods=['GET'])
 def health_check():

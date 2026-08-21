@@ -31,10 +31,10 @@ import themeConfig from '@configs/themeConfig'
 import { useSettings } from '@core/hooks/useSettings'
 
 // Styled Custom Components
-const LoginIllustration = styled('img')(({ theme }) => ({
+const RegisterIllustration = styled('img')(({ theme }) => ({
   zIndex: 2,
   blockSize: 'auto',
-  maxBlockSize: 680,
+  maxBlockSize: 600,
   maxInlineSize: '100%',
   margin: theme.spacing(12),
   [theme.breakpoints.down(1536)]: {
@@ -45,7 +45,7 @@ const LoginIllustration = styled('img')(({ theme }) => ({
   }
 }))
 
-const LoginV2 = () => {
+const RegisterV2 = () => {
   // States
   const [isPasswordShown, setIsPasswordShown] = useState(false)
 
@@ -66,20 +66,20 @@ const LoginV2 = () => {
           }
         )}
       >
-        <LoginIllustration
+        <RegisterIllustration
           src='/images/illustrations/characters-with-objects/7.png'
           alt='character-illustration'
           className={classnames({ 'scale-x-[-1]': theme.direction === 'rtl' })}
         />
       </div>
       <div className='flex justify-center items-center bs-full bg-backgroundPaper !min-is-full p-6 md:!min-is-[unset] md:p-12 md:is-[480px]'>
-        <Link className='absolute block-start-5 sm:block-start-[33px] inline-start-6 sm:inline-start-[38px]'>
+        <Link href='/' className='absolute block-start-5 sm:block-start-[33px] inline-start-6 sm:inline-start-[38px]'>
           <Logo />
         </Link>
         <div className='flex flex-col gap-6 is-full sm:is-auto md:is-full sm:max-is-[400px] md:max-is-[unset] mbs-11 sm:mbs-14 md:mbs-0'>
           <div className='flex flex-col gap-1'>
-            <Typography variant='h4'>{`Welcome to ${themeConfig.templateName}! 👋🏻`}</Typography>
-            <Typography>Please sign-in to your account and start the adventure</Typography>
+            <Typography variant='h4'>Adventure starts here 🚀</Typography>
+            <Typography>Make your app management easy and fun!</Typography>
           </div>
           <form
             noValidate
@@ -87,21 +87,23 @@ const LoginV2 = () => {
             onSubmit={async e => {
               e.preventDefault()
               const formData = new FormData(e.currentTarget)
+              const username = formData.get('username') as string
               const email = formData.get('email') as string
               const password = formData.get('password') as string
+              const fullname = formData.get('fullname') as string
+              const cpf = formData.get('cpf') as string
+              const phone = formData.get('phone') as string
+
               try {
-                const response = await fetch('http://localhost:3005/auth/login', {
+                const response = await fetch('http://localhost:3005/auth/register', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ email, password })
+                  body: JSON.stringify({ username, email, password, fullname, cpf, phone })
                 })
                 if (response.ok) {
-                  const data = await response.json()
-                  localStorage.setItem('token', data.token)
-                  router.push('/dashboard')
+                  router.push('/login')
                 } else {
-                  const err = await response.json()
-                  alert(`Login failed: ${err.message ?? response.statusText}`)
+                  alert('Registration failed. Please try again.')
                 }
               } catch (err) {
                 console.error(err)
@@ -110,7 +112,11 @@ const LoginV2 = () => {
             }}
             className='flex flex-col gap-5'
           >
-            <CustomTextField name='email' autoFocus fullWidth label='Email' placeholder='user@email.com' />
+            <CustomTextField name='username' autoFocus fullWidth label='Username' placeholder='johndoe' />
+            <CustomTextField name='fullname' fullWidth label='Full Name' placeholder='John Doe' />
+            <CustomTextField name='cpf' fullWidth label='CPF' placeholder='12345678901' />
+            <CustomTextField name='phone' fullWidth label='Phone' placeholder='11999999999' />
+            <CustomTextField name='email' fullWidth label='Email' placeholder='user@email.com' />
             <CustomTextField
               name='password'
               fullWidth
@@ -130,18 +136,25 @@ const LoginV2 = () => {
               }}
             />
             <div className='flex justify-between items-center flex-wrap gap-x-3 gap-y-1'>
-              <FormControlLabel control={<Checkbox />} label='Remember me' />
-              <Typography className='text-end' color='primary.main' component={Link}>
-                Forgot password?
-              </Typography>
+              <FormControlLabel
+                control={<Checkbox defaultChecked />}
+                label={
+                  <>
+                    <span>I agree to </span>
+                    <Link className='text-primary' href='/' onClick={e => e.preventDefault()}>
+                      privacy policy & terms
+                    </Link>
+                  </>
+                }
+              />
             </div>
             <Button fullWidth variant='contained' type='submit'>
-              Login
+              Sign Up
             </Button>
             <div className='flex justify-center items-center flex-wrap gap-2'>
-              <Typography>New on our platform?</Typography>
-              <Typography component={Link} href='/register' color='primary.main'>
-                Create an account
+              <Typography>Already have an account?</Typography>
+              <Typography component={Link} href='/login' color='primary.main'>
+                Sign in instead
               </Typography>
             </div>
             <Divider className='gap-2 text-textPrimary'>or</Divider>
@@ -166,4 +179,4 @@ const LoginV2 = () => {
   )
 }
 
-export default LoginV2
+export default RegisterV2

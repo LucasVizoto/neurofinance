@@ -131,7 +131,7 @@ export const chatSlice = createSlice({
   },
   extraReducers: (builder) => {
     // FETCH CHATS
-    builder.fulfilled(fetchChats, (state, action) => {
+    builder.addCase(fetchChats.fulfilled, (state, action) => {
       // action.payload = array de chats do BD: { id, mongoId, title, createdAt }
       // O template espera: { id, userId, unseenMsgs, chat: UserChatType[] }
       
@@ -147,7 +147,7 @@ export const chatSlice = createSlice({
     })
     
     // CREATE CHAT
-    builder.fulfilled(createNewChat, (state, action) => {
+    builder.addCase(createNewChat.fulfilled, (state, action) => {
       const createdChat = action.payload
       const newChat: ChatType = {
         id: createdChat.id,
@@ -163,7 +163,7 @@ export const chatSlice = createSlice({
     })
     
     // FETCH HISTORY
-    builder.fulfilled(fetchChatHistory, (state, action) => {
+    builder.addCase(fetchChatHistory.fulfilled, (state, action) => {
       const { mongoId, data } = action.payload
       // Encontrar o chat no state
       // @ts-ignore
@@ -180,7 +180,7 @@ export const chatSlice = createSlice({
     })
     
     // SEND MESSAGE
-    builder.fulfilled(sendMessage, (state, action) => {
+    builder.addCase(sendMessage.fulfilled, (state, action) => {
       const { mongoId, requestMessage, responseMessage } = action.payload
       
       // @ts-ignore

@@ -47,4 +47,16 @@ export class AiController {
             user,
         );
     }
+    
+    @Get('dashboard')
+    async getDashboard(@Req() request: Request, @CurrentUser() user: UserInfo) {
+        return this.proxyService.proxyRequest(
+            'ai',
+            request.method,
+            request.originalUrl.replace('/ai', ''),
+            undefined,
+            request.headers as any,
+            user,
+        );
+    }
 }

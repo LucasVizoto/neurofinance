@@ -1,78 +1,110 @@
+'use client'
+
+// React Imports
+import { useEffect, useState } from 'react'
+
 // MUI Imports
 import Grid from '@mui/material/Grid2'
+import TextField from '@mui/material/TextField'
+import Button from '@mui/material/Button'
+import Typography from '@mui/material/Typography'
+import CircularProgress from '@mui/material/CircularProgress'
 
 // Components Imports
-import Congratulations from '@views/dashboards/analytics/Congratulations'
-import LineAreaOrderChart from '@views/dashboards/analytics/LineAreaOrderChart'
 import TotalRevenueReport from '@views/dashboards/analytics/TotalRevenueReport'
-import BarRevenueChart from '@views/dashboards/analytics/BarRevenueChart'
-import LineProfitReportChart from '@views/dashboards/analytics/LineProfitReportChart'
-import OrderStatistics from '@views/dashboards/analytics/OrderStatistics'
-import FinancialStatsTabs from '@views/dashboards/analytics/FinancialStatsTabs'
-import Transactions from '@views/dashboards/analytics/Transactions'
-import ActivityTimeline from '@views/dashboards/analytics/ActivityTimeline'
-import TableWithTabs from '@views/dashboards/analytics/TableWithTabs'
 import Vertical from '@/components/card-statistics/Vertical'
 
+import axios from 'axios'
+
 const DashboardAnalytics = () => {
+  const [ticker, setTicker] = useState('PETR4.SA')
+  const [inputTicker, setInputTicker] = useState('PETR4.SA')
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  const fetchDashboardData = async (symbol: string) => {
+    setLoading(true)
+    try {
+      const token = localStorage.getItem('token') || ''
+      const res = await axios.get(`http://localhost:3005/ai/dashboard?ticker=${symbol}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setData(res.data)
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchDashboardData(ticker)
+  }, [ticker])
+
+  const handleSearch = () => {
+    if (inputTicker.trim()) {
+      setTicker(inputTicker.trim().toUpperCase())
+    }
+  }
+
   return (
     <Grid container spacing={6}>
       <Grid size={{ xs: 12 }}>
-        <Grid container spacing={6}>
-          <Grid size={{ xs: 12, lg: 8 }}>
-            <Congratulations />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, lg: 2 }}>
-            <LineAreaOrderChart />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, lg: 2 }}>
-            <Vertical
-              title='Sales'
-              imageSrc='/images/cards/wallet-info-bg.png'
-              stats='$4,679'
-              trendNumber={28.14}
-              trend='positive'
-            />
-          </Grid>
-          <Grid size={{ xs: 12, lg: 8 }} order={{ xs: 2, lg: 1 }}>
-            <TotalRevenueReport />
-          </Grid>
-          <Grid size={{ xs: 12, lg: 4 }} order={{ xs: 1, lg: 2 }}>
+        <div className="flex items-center gap-4 mb-6">
+          <Typography variant="h5" className="font-semibold">Dashboard do Ativo</Typography>
+          <TextField
+            size="small"
+            value={inputTicker}
+            onChange={(e) => setInputTicker(e.target.value)}
+            placeholder="Ex: PETR4.SA"
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+          />
+          <Button variant="contained" onClick={handleSearch} disabled={loading}>
+            Buscar
+          </Button>
+        </div>
+      </Grid>
+      
+      {loading && (
+        <Grid size={{ xs: 12 }} className="flex justify-center p-10">
+          <CircularProgress />
+        </Grid>
+      )}
+
+      {!loading && data && data.success && (
+        <>
+          <Grid size={{ xs: 12 }}>
             <Grid container spacing={6}>
-              <Grid size={{ xs: 12, sm: 6, md: 4, lg: 6 }}>
-                <Vertical
-                  title='Payments'
-                  imageSrc='/images/cards/paypal-error-bg.png'
-                  stats='$2,468'
-                  trendNumber={14.82}
-                  trend='negative'
-                />
+              <Grid size={{ xs: 12, lg: 8 }} order={{ xs: 2, lg: 1 }}>
+                <TotalRevenueReport history={data.history} ticker={data.ticker} />
               </Grid>
-              <Grid size={{ xs: 12, sm: 6, md: 4, lg: 6 }}>
-                <BarRevenueChart />
-              </Grid>
-              <Grid size={{ xs: 12, md: 4, lg: 12 }}>
-                <LineProfitReportChart />
+              
+              <Grid size={{ xs: 12, lg: 4 }} order={{ xs: 1, lg: 2 }}>
+                <Grid container spacing={6}>
+                  <Grid size={{ xs: 12, sm: 6, lg: 12 }}>
+                    <Vertical
+                      title={`Cotação Atual (${data.ticker})`}
+                      imageSrc='/images/cards/wallet-info-bg.png'
+                      stats={`R$ ${data.currentPrice?.toFixed(2)}`}
+                      trendNumber={Number(Math.abs(data.trend || 0).toFixed(2))}
+                      trend={(data.trend || 0) >= 0 ? 'positive' : 'negative'}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6, lg: 12 }}>
+                    <Vertical
+                      title='Volume de Negociações'
+                      imageSrc='/images/cards/paypal-error-bg.png'
+                      stats={(data.currentVolume || 0).toLocaleString('pt-BR')}
+                      trendNumber={0}
+                      trend='positive'
+                    />
+                  </Grid>
+                </Grid>
               </Grid>
             </Grid>
           </Grid>
-        </Grid>
-      </Grid>
-      <Grid size={{ xs: 12, md: 4 }}>
-        <OrderStatistics />
-      </Grid>
-      <Grid size={{ xs: 12, md: 4 }}>
-        <FinancialStatsTabs />
-      </Grid>
-      <Grid size={{ xs: 12, md: 4 }}>
-        <Transactions />
-      </Grid>
-      <Grid size={{ xs: 12, md: 6 }}>
-        <ActivityTimeline />
-      </Grid>
-      <Grid size={{ xs: 12, md: 6 }}>
-        <TableWithTabs />
-      </Grid>
+        </>
+      )}
     </Grid>
   )
 }

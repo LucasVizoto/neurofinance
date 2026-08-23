@@ -100,6 +100,9 @@ const ApexChartWrapper = styled(Box)<BoxProps>(({ theme }) => ({
     },
     '& .apexcharts-marker': {
       boxShadow: 'none'
+    },
+    '& .apexcharts-xaxis-label': {
+      whiteSpace: 'nowrap'
     }
   }
 })) as typeof Box

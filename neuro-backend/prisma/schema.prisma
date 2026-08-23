@@ -20,7 +20,8 @@ model Users {
   password         String
   email            String    @unique
   fullname         String
-  cpf              String    @unique
+  cpf              String?   @unique
+  googleId         String?   @unique @map("google_id")
   status           Boolean   @default(true)
   theme            String?   @default("dark")
   customColor      String?   @default("##0D9394") @map("custom_color")

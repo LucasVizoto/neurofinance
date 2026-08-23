@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsEmail, IsOptional, IsString, Min, MinLength } from "class-validator";
+import { IsEmail, IsOptional, IsString, MinLength } from "class-validator";
 
 export enum Role {
     USER = 'user',
@@ -8,11 +8,13 @@ export enum Role {
 }
 
 export class RegisterDto {
-    constructor(email: string, password: string, firstName: string, lastName: string, role: Role) {
+    constructor(email: string, password: string, username: string, fullname: string, cpf: string, phone: string, role: Role) {
         this.email = email;
         this.password = password;
-        this.firstName = firstName;
-        this.lastName = lastName;
+        this.username = username;
+        this.fullname = fullname;
+        this.cpf = cpf;
+        this.phone = phone;
         this.role = role;
     }
 
@@ -33,18 +35,32 @@ export class RegisterDto {
     password: string;
 
     @ApiProperty({
-        description: 'Primeiro nome do usuário',
-        example: 'John'
+        description: 'Username do usuário',
+        example: 'johndoe'
     })
     @IsString()
-    firstName: string;
+    username: string;
 
     @ApiProperty({
-        description: 'Sobrenome do usuário',
-        example: 'Doe'
+        description: 'Nome completo do usuário',
+        example: 'John Doe'
     })
     @IsString()
-    lastName: string;
+    fullname: string;
+
+    @ApiProperty({
+        description: 'CPF do usuário',
+        example: '12345678901'
+    })
+    @IsString()
+    cpf: string;
+
+    @ApiProperty({
+        description: 'Telefone do usuário',
+        example: '11999999999'
+    })
+    @IsString()
+    phone: string;
 
     @ApiProperty({
         description: 'Função do usuário',

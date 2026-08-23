@@ -4,15 +4,15 @@ import request from 'supertest'
 import { makeUser } from './tests/factories/make-user.js'
 import { hash } from 'bcryptjs'
 
-export async function createAndAuthenticateUser(app: FastifyInstance, isAdmin = false) {
+export async function createAndAuthenticateUser(app: FastifyInstance, isAdmin = false, email = 'johndoe@example.com') {
     const user = await prisma.users.create({
-        data: await makeUser({ password: await hash('123456', 6), email: 'johndoe@example.com' })
+        data: await makeUser({ password: await hash('123456', 6), email })
     })
 
     const authResponse = await request(app.server)
         .post('/auth')
         .send({
-            email: 'johndoe@example.com',
+            email,
             password: '123456',
         })
 

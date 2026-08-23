@@ -24,7 +24,7 @@ export class DeleteChatUseCase {
         }
 
         const userChats = await this.chatRepository.findByUserId(userId)
-        if (userChats.indexOf(chat) === -1) {
+        if (!userChats.some(c => c.id === chat.id)) {
             throw new ResourceNotFoundError()
         }
 

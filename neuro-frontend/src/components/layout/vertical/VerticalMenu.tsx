@@ -81,6 +81,9 @@ const VerticalMenu = ({ scrollMenu }: Props) => {
             <MenuItem href='/chat' icon={<i className='bx-chat' />}>
               Chat
             </MenuItem>
+            <MenuItem href='/profile' icon={<i className='bx-user' />}>
+              Perfil
+            </MenuItem>
           </Menu>
         </ScrollWrapper>
       </Box>

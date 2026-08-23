@@ -16,9 +16,25 @@ import type { ChatType, ChatDataType, UserChatType, ProfileUserType } from '@/ty
 
 // Component Imports
 import CustomAvatar from '@core/components/mui/Avatar'
+import AssetAnalysisCard from './AssetAnalysisCard'
+import type { StructuredAnalysis } from './AssetAnalysisCard'
 
 // Util Imports
 import { getInitials } from '@/utils/getInitials'
+
+// ─────────────────────────────────────────────
+// JSON Analysis parser
+// ─────────────────────────────────────────────
+const tryParseAnalysis = (message: string): StructuredAnalysis | null => {
+  try {
+    const data = JSON.parse(message)
+    if (data && data.tipo === 'analise_estruturada') return data as StructuredAnalysis
+  } catch {
+    // not JSON
+  }
+  return null
+}
+
 
 type MsgGroupType = {
   senderId: number
@@ -99,8 +115,11 @@ const ChatLog = ({ chatStore, isBelowLgScreen, isBelowMdScreen, isBelowSmScreen 
   // Props
   const { profileUser, contacts } = chatStore
 
-  // Vars
-  const activeUserChat = chatStore.chats.find((chat: ChatType) => chat.userId === chatStore.activeUser?.id)
+  // Vars — todos os chats compartilham o mesmo userId do agente (999);
+  // a conversa visível deve ser a selecionada via activeChatId (mongoId).
+  const activeUserChat = chatStore.chats.find(
+    (chat: ChatType) => chat.mongoId === chatStore.activeChatId
+  )
 
   // Refs
   const scrollRef = useRef(null)
@@ -164,18 +183,25 @@ const ChatLog = ({ chatStore, isBelowLgScreen, isBelowMdScreen, isBelowSmScreen 
                     'max-is-[calc(100%-5.75rem)]': isBelowSmScreen
                   })}
                 >
-                  {msgGroup.messages.map((msg, index) => (
-                    <Typography
-                      key={index}
-                      className={classnames('whitespace-pre-wrap pli-4 plb-2 shadow-xs', {
-                        'bg-backgroundPaper rounded-e rounded-b': !isSender,
-                        'bg-primary text-[var(--mui-palette-primary-contrastText)] rounded-s rounded-b': isSender
-                      })}
-                      style={{ wordBreak: 'break-word' }}
-                    >
-                      {msg.message}
-                    </Typography>
-                  ))}
+                  {msgGroup.messages.map((msg, index) => {
+                    const analysis = tryParseAnalysis(msg.message ?? '')
+                    if (analysis) {
+                      return <AssetAnalysisCard key={index} analysis={analysis} />
+                    }
+                    return (
+                      <Typography
+                        key={index}
+                        className={classnames('whitespace-pre-wrap pli-4 plb-2 shadow-xs', {
+                          'bg-backgroundPaper rounded-e rounded-b': !isSender,
+                          'bg-primary text-[var(--mui-palette-primary-contrastText)] rounded-s rounded-b': isSender
+                        })}
+                        style={{ wordBreak: 'break-word' }}
+                      >
+                        {msg.message}
+                      </Typography>
+                    )
+                  })}
+
                   {msgGroup.messages.map(
                     (msg, index) =>
                       index === msgGroup.messages.length - 1 &&

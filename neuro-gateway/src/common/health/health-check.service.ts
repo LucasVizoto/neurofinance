@@ -69,9 +69,7 @@ export class HealthCheckService {
     async checkAllServices(): Promise<ServiceHealth[]> {
         const services: (keyof typeof serviceConfig)[] = [
             'users',
-            'checkout',
-            'payments',
-            'products',
+            'ai',
         ];
 
         const healthChecks = await Promise.allSettled( //Ao invés do Promise.all, use Promise.allSettled para garantir que todas as promessas sejam resolvidas, mesmo que algumas falhem

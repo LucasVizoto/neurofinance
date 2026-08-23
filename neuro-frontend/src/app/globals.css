@@ -19,8 +19,15 @@
 }
 
 [data-dark] {
-  --backdrop-color: rgb(29 29 42 / 0.6);
+  --backdrop-color: rgb(7 6 15 / 0.72);
   --mui-mainColorChannels-shadow: var(--mui-mainColorChannels-darkShadow);
+}
+
+[data-dark] body {
+  background:
+    radial-gradient(1100px 520px at 0% -10%, rgb(124 58 237 / 0.16), transparent 55%),
+    radial-gradient(900px 480px at 100% 110%, rgb(99 102 241 / 0.1), transparent 50%),
+    var(--mui-palette-background-default);
 }
 
 *,

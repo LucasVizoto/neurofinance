@@ -5,6 +5,7 @@ export interface UsersRepository {
     findByEmail(email: string): Promise<Users | null>
     findByCpf(cpf: string): Promise<Users | null>
     findByUsername(username: string): Promise<Users | null>
+    findByGoogleId(googleId: string): Promise<Users | null>
     create(data: Prisma.UsersCreateInput): Promise<Users>
     changeUserStatus(user: Users): Promise<void>
     save(user: Users): Promise<void>

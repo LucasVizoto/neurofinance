@@ -1,34 +1,97 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# neuro-frontend
 
-## Getting Started
+Interface web do **NeuroFinance**: dashboard de cotações, chat com o agente e perfil. Next.js 15 (App Router) falando **somente** com o `neuro-gateway`.
 
-First, run the development server:
+## Função no sistema
+
+- Login / cadastro e callback do Google (`/login/callback`)
+- Dashboard com ticker padrão vindo do perfil (`preferenceTicker`; fallback `AAPL`)
+- Chat com limite de 5 conversas
+- Perfil (dados, ticker preferido, avatar)
+
+O browser usa `NEXT_PUBLIC_GATEWAY_URL` (default `http://localhost:3005`). Nunca aponte essa variável para `http://neuro-gateway:3005`: o hostname interno do Docker não resolve no PC do usuário.
+
+## Stack
+
+- Next.js 15, React 18, TypeScript
+- MUI + tema próprio (`#A855F7`, dark)
+- Redux Toolkit (`user`, `chat`)
+- ApexCharts na dashboard
+- Alert/AlertDialog em `src/components/heroui/`
+
+Rotas relevantes:
+
+| Rota | Descrição |
+|---|---|
+| `/login` | E-mail/senha + Google |
+| `/login/callback` | Recebe `?token=` do OAuth |
+| `/register` | Cadastro |
+| `/dashboard` | Histórico, cotações, crescimento, news |
+| `/chat` | Conversas com o agente |
+| `/profile` | Perfil e ticker padrão |
+| `/` | Redirect permanente para `/dashboard` |
+
+`AuthGuard` hidrata o usuário via `GET /me` antes das páginas autenticadas.
+
+## Variáveis de ambiente
+
+Copie `.env.example` para `.env.local` no desenvolvimento.
+
+| Variável | Descrição |
+|---|---|
+| `NEXT_PUBLIC_APP_URL` | URL pública do app (`http://localhost:3000`) |
+| `NEXT_PUBLIC_GATEWAY_URL` | URL **pública** do gateway (`http://localhost:3005`) |
+| `NEXT_PUBLIC_API_URL` | Fallback legado; o código prefere `NEXT_PUBLIC_GATEWAY_URL` |
+| `BASEPATH` | Prefixo de rota (vazio na instalação padrão) |
+
+`NEXT_PUBLIC_*` é embutida no **build**. Mudou o IP/domínio da VPS? Reconstrua a imagem:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
+docker compose up -d --build neuro-frontend
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Como rodar (local)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Pré-requisitos: Node 22, gateway em `:3005` (e, atrás dele, backend + learning).
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+```bash
+cd neuro-frontend
+cp .env.example .env.local
+npm install
+npm run dev
+```
 
-## Learn More
+Abre [http://localhost:3000](http://localhost:3000). O `postinstall` gera o CSS dos ícones (`npm run build:icons`).
 
-To learn more about Next.js, take a look at the following resources:
+Produção local:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run build
+npm start
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+## Como rodar (Docker)
 
-## Deploy on Vercel
+Na raiz do monorepo. Os `ARG` `NEXT_PUBLIC_APP_URL` e `NEXT_PUBLIC_GATEWAY_URL` vêm do `.env` da raiz.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+cp .env.example .env
+# ajuste NEXT_PUBLIC_* para o IP/domínio da VPS
+docker compose up -d --build neuro-frontend
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+Porta publicada: **3000**. O container só sobe com o gateway healthy.
+
+## Scripts úteis
+
+```bash
+npm run lint
+npm run lint:fix
+npm run format
+npm run build:icons
+```
+
+## Dependências
+
+- **neuro-gateway** — obrigatório (auth, dashboard, chat, perfil)
+- Backend e learning são indiretos: o frontend não os endereça

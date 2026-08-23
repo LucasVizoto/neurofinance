@@ -1,0 +1,9 @@
+__pycache__
+venv
+.env
+.git
+*.ipynb
+*.pyc
+.pytest_cache
+catboost_info
+*.png

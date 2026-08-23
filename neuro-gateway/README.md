@@ -1,98 +1,141 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# neuro-gateway
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+BFF (Backend for Frontend) do **NeuroFinance**. É a única API que o browser deve chamar. Autentica, aplica rate limit, documenta no Swagger e faz proxy para `neuro-backend` e `neuro-learning`.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Função no sistema
 
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
-
-```bash
-$ npm install
+```
+Browser  →  neuro-gateway:3005  →  neuro-backend:3001   (users, chats, JWT)
+                             └→  neuro-learning:5000  (IA, ML, dashboard)
 ```
 
-## Compile and run the project
+- Valida JWT nas rotas privadas (`JwtAuthGuard`)
+- Login e-mail/senha e OAuth Google (o Google **não** fala com o backend)
+- Circuit breaker + timeout nas chamadas aos microsserviços
+- Swagger em `/api`
+
+Não persiste dados de negócio. Usuários e chats ficam no backend; mensagens e cotações no learning.
+
+## Stack
+
+- NestJS 11, Passport JWT, Helmet, Throttler
+- `@nestjs/axios` para o proxy
+- Swagger (`@nestjs/swagger`) com tema próprio em `src/swagger/`
+
+## Fluxos principais
+
+**Login e-mail/senha** — `POST /auth/login` → backend `POST /auth` → devolve JWT.
+
+**Cadastro** — `POST /auth/register` → backend `POST /users`.
+
+**Google OAuth**
+
+1. `GET /auth/google` redireciona ao Google
+2. `GET /auth/google/callback` troca o `code`, chama `POST /auth/google` no backend (find-or-create)
+3. Redireciona o frontend para `/login/callback?token=`
+
+O `GOOGLE_CALLBACK_URL` tem que ser **idêntico** a um Authorized redirect URI no Google Cloud Console (local: `http://localhost:3005/auth/google/callback`).
+
+**Dashboard / chat / predição** — rotas `/ai/*` autenticadas, proxy para o Flask.
+
+## API pública (porta 3005)
+
+Documentação interativa: [http://localhost:3005/api](http://localhost:3005/api)
+
+| Método | Rota | Auth | Destino |
+|---|---|---|---|
+| `POST` | `/auth/login` | não | backend `/auth` |
+| `POST` | `/auth/register` | não | backend `/users` |
+| `GET` | `/auth/google` | não | Google OAuth |
+| `GET` | `/auth/google/callback` | não | Google → frontend |
+| `GET` | `/me` | JWT | backend `/me` |
+| `PUT` | `/users/profile` | JWT | backend (multipart avatar) |
+| `POST` | `/chats` | JWT | backend; máximo 5 chats |
+| `GET` | `/chats/user/:userId` | JWT | backend |
+| `GET` | `/chats/:id` | JWT | backend |
+| `DELETE` | `/chats/:id` | JWT | backend |
+| `POST` | `/ai/predict` | JWT | learning `/predict` |
+| `POST` | `/ai/analyze` | JWT | learning `/analyze` |
+| `POST` | `/ai/chat` | JWT | learning `/chat` |
+| `GET` | `/ai/chat/:mongoId` | JWT | learning `/chat/:id` |
+| `GET` | `/ai/dashboard` | JWT | learning `/dashboard` |
+| `GET` | `/ai/dashboard/quotes` | JWT | learning |
+| `GET` | `/ai/dashboard/growth` | JWT | learning |
+| `GET` | `/ai/dashboard/valuations` | JWT | learning |
+| `GET` | `/ai/dashboard/news` | JWT | learning |
+| `GET` | `/health` | não | liveness do gateway |
+| `GET` | `/health/services` | não | ping nos microsserviços |
+| `GET` | `/health/ready` | não | readiness |
+| `GET` | `/health/live` | não | liveness |
+
+Timeouts em `src/config/gateway.config.ts`: users ~160s, AI 30s.
+
+## Variáveis de ambiente
+
+Copie `.env.example` para `.env`.
+
+| Variável | Obrigatória | Local | Docker |
+|---|---|---|---|
+| `PORT` | não (default 3005) | `3005` | `3005` |
+| `JWT_SECRET` | sim | igual ao backend | igual ao backend |
+| `USERS_SERVICE_URL` | sim | `http://localhost:3001` | `http://neuro-backend:3001` |
+| `AI_SERVICE_URL` | sim | `http://localhost:5000` | `http://neuro-learning:5000` |
+| `CORS_ORIGIN` | sim | `http://localhost:3000` | URL pública do frontend |
+| `FRONTEND_URL` | sim | `http://localhost:3000` | URL pública do frontend |
+| `GOOGLE_CLIENT_ID` | para OAuth | Console Google | idem |
+| `GOOGLE_CLIENT_SECRET` | para OAuth | Console Google | idem |
+| `GOOGLE_CALLBACK_URL` | para OAuth | `http://localhost:3005/auth/google/callback` | `http://SEU_HOST:3005/auth/google/callback` |
+
+O nome correto da env do backend é `USERS_SERVICE_URL` (não `USER_SERVICE_URL`).
+
+Authorized JavaScript origins no Console: `http://localhost:3000` e `http://localhost:3005`.
+
+## Como rodar (local)
+
+Pré-requisitos: Node 22, `neuro-backend` e `neuro-learning` no ar (ou o gateway marca os health checks como unhealthy).
 
 ```bash
-# development
-$ npm run start
+cd neuro-gateway
+cp .env.example .env
+# JWT_SECRET igual ao backend
+# USERS_SERVICE_URL=http://localhost:3001
+# AI_SERVICE_URL=http://localhost:5000
 
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm install
+npm run start:dev
 ```
 
-## Run tests
+- API: http://localhost:3005
+- Swagger: http://localhost:3005/api
+
+Produção local:
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm run build
+npm run start:prod
 ```
 
-## Deployment
+## Como rodar (Docker)
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Na raiz do monorepo:
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+cp .env.example .env
+docker compose up -d --build neuro-gateway
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+O Compose só sobe o gateway depois de backend e learning healthy. Porta publicada: **3005**.
 
-## Resources
+## Testes
 
-Check out a few resources that may come in handy when working with NestJS:
+```bash
+npm test
+npm run test:e2e
+npm run test:cov
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+## Dependências
 
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- **neuro-backend** — usuários, JWT, chats
+- **neuro-learning** — dashboard, chat com Gemini, predição
+- **Google Cloud Console** — só se for usar OAuth

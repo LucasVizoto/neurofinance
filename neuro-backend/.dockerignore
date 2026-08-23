@@ -1,0 +1,8 @@
+node_modules
+build
+coverage
+.git
+.env
+*.md
+docker-compose.yaml
+src/generated

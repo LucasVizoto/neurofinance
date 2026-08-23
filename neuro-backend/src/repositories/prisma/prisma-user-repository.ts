@@ -24,9 +24,27 @@ export class PrismaUserRepository implements UsersRepository {
     }
 
     async findByCpf(cpf: string) {
+        if (!cpf) {
+            return null
+        }
+
         const user = await prisma.users.findUnique({
             where: {
                 cpf,
+            },
+        })
+
+        return user
+    }
+
+    async findByGoogleId(googleId: string) {
+        if (!googleId) {
+            return null
+        }
+
+        const user = await prisma.users.findUnique({
+            where: {
+                googleId,
             },
         })
 
@@ -66,6 +84,7 @@ export class PrismaUserRepository implements UsersRepository {
         await prisma.users.update({
             data: {
                 cpf: user.cpf,
+                googleId: user.googleId,
                 customColor: user.customColor,
                 preferenceTicker: user.preferenceTicker,
                 profileImageName: user.profileImageName,

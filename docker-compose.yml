@@ -1,0 +1,190 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: neuro-postgres
+    restart: unless-stopped
+    init: true
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-neuro}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-neuro-backend}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - neuro-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    logging: *default-logging
+
+  mongo-db:
+    image: mongo:6
+    container_name: neuro-mongo
+    restart: unless-stopped
+    init: true
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - neuro-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    logging: *default-logging
+
+  neuro-backend:
+    build:
+      context: ./neuro-backend
+      dockerfile: Dockerfile
+    container_name: neuro-backend
+    restart: unless-stopped
+    init: true
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      mongo-db:
+        condition: service_healthy
+    command: ["sh", "-c", "node_modules/.bin/prisma migrate deploy && node build/server.cjs"]
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-neuro}:${POSTGRES_PASSWORD}@postgres-db:5432/${POSTGRES_DB:-neuro-backend}?schema=public
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      SUPABASE_AVATAR_BUCKET: ${SUPABASE_AVATAR_BUCKET:-avatars}
+    networks:
+      - neuro-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    logging: *default-logging
+
+  neuro-learning:
+    build:
+      context: ./neuro-learning
+      dockerfile: Dockerfile
+    container_name: neuro-learning
+    restart: unless-stopped
+    init: true
+    depends_on:
+      mongo-db:
+        condition: service_healthy
+    environment:
+      MONGO_URI: mongodb://mongo-db:27017/
+      MONGO_URL: mongodb://mongo-db:27017/
+      MONGO_DB_NAME: neurofinance
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      ALPHAVANTAGE_API_KEY: ${ALPHAVANTAGE_API_KEY:-}
+    networks:
+      - neuro-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/health')",
+        ]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 50s
+    logging: *default-logging
+
+  neuro-gateway:
+    build:
+      context: ./neuro-gateway
+      dockerfile: Dockerfile
+    container_name: neuro-gateway
+    restart: unless-stopped
+    init: true
+    depends_on:
+      neuro-backend:
+        condition: service_healthy
+      neuro-learning:
+        condition: service_healthy
+    environment:
+      PORT: 3005
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      USERS_SERVICE_URL: http://neuro-backend:3001
+      AI_SERVICE_URL: http://neuro-learning:5000
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:3005/auth/google/callback}
+    ports:
+      - "3005:3005"
+    networks:
+      - neuro-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3005/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 25s
+    logging: *default-logging
+
+  neuro-frontend:
+    build:
+      context: ./neuro-frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+        NEXT_PUBLIC_GATEWAY_URL: ${NEXT_PUBLIC_GATEWAY_URL:-http://localhost:3005}
+    container_name: neuro-frontend
+    restart: unless-stopped
+    init: true
+    depends_on:
+      neuro-gateway:
+        condition: service_healthy
+    environment:
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      NEXT_PUBLIC_GATEWAY_URL: ${NEXT_PUBLIC_GATEWAY_URL:-http://localhost:3005}
+      BASEPATH: ${BASEPATH:-}
+    ports:
+      - "3000:3000"
+    networks:
+      - neuro-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/ >/dev/null || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 8
+      start_period: 25s
+    logging: *default-logging
+
+volumes:
+  postgres_data:
+  mongo_data:
+
+networks:
+  neuro-network:
+    driver: bridge

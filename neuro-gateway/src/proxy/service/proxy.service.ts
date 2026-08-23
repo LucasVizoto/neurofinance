@@ -89,24 +89,15 @@ export class ProxyService {
         path: string,
     ) {
         switch (serviceName) {
-            case 'user':
+            case 'users':
                 if (path.includes('/auth/login')) {
                     return this.defaultFallbackService.createErrorFallback('users', 'Authentication service unavailable');
                 }
-                return this.defaultFallbackService.createErrorFallback('users', 'User service unavailable');
-            case 'products':
-                if (method.toLowerCase() === 'get') {
-                    return this.cacheFallbackService.createCacheFallback(
-                        `products-${path}`,
-                        { products: [], total: 0, page: 1, limit: 10 },
-                    );
-                }
-                return this.defaultFallbackService.createErrorFallback('products', 'Product service unavailable');
-            case 'checkout': // No JS caso tenha um case aninhado com outro, ele usa a execução do caso abaixo
-            case 'payments':
+                return this.defaultFallbackService.createErrorFallback('users', 'User/Chat service unavailable');
+            case 'ai':
                 return this.defaultFallbackService.createErrorFallback(
                     serviceName,
-                    `${serviceName} service unavailable`,
+                    'AI and ML service unavailable',
                 );
             default:
                 return this.defaultFallbackService.createErrorFallback(

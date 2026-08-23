@@ -1,14 +1,16 @@
+'use client'
+
 // React Imports
 import { useState } from 'react'
 import type { ReactNode, RefObject } from 'react'
 
 // MUI Imports
 import Avatar from '@mui/material/Avatar'
+import Button from '@mui/material/Button'
 import Drawer from '@mui/material/Drawer'
 import Typography from '@mui/material/Typography'
-import Autocomplete from '@mui/material/Autocomplete'
-import InputAdornment from '@mui/material/InputAdornment'
 import IconButton from '@mui/material/IconButton'
+import Tooltip from '@mui/material/Tooltip'
 
 // Third-party Imports
 import classnames from 'classnames'
@@ -20,7 +22,7 @@ import type { ChatDataType, StatusObjType } from '@/types/apps/chatTypes'
 import type { AppDispatch } from '@/redux-store'
 
 // Slice Imports
-import { addNewChat } from '@/redux-store/slices/chat'
+import { createNewChat, deleteChat, fetchChatHistory } from '@/redux-store/slices/chat'
 
 // Component Imports
 import CustomAvatar from '@core/components/mui/Avatar'
@@ -28,6 +30,7 @@ import CustomChip from '@core/components/mui/Chip'
 import UserProfileLeft from './UserProfileLeft'
 import AvatarWithBadge from './AvatarWithBadge'
 import CustomTextField from '@core/components/mui/TextField'
+import { useFeedback } from '@/components/heroui'
 
 // Util Imports
 import { getInitials } from '@/utils/getInitials'
@@ -61,67 +64,122 @@ type RenderChatType = {
   backdropOpen: boolean
   setBackdropOpen: (value: boolean) => void
   isBelowMdScreen: boolean
+  dispatch: AppDispatch
+  onDeleteChat: (chat: { id: number; title?: string }) => void
 }
 
-// Render chat list
+// ─────────────────────────────────────────────
+// Chat list renderer (with delete button)
+// ─────────────────────────────────────────────
 const renderChat = (props: RenderChatType) => {
-  // Props
-  const { chatStore, getActiveUserData, setSidebarOpen, backdropOpen, setBackdropOpen, isBelowMdScreen } = props
+  const { chatStore, getActiveUserData, setSidebarOpen, backdropOpen, setBackdropOpen, isBelowMdScreen, dispatch, onDeleteChat } = props
 
-  return chatStore.chats.map(chat => {
+  if (chatStore.chats.length === 0) {
+    return (
+      <li className='flex flex-col items-center justify-center gap-3 py-10 text-center opacity-60'>
+        <i className='bx-message-rounded-dots text-5xl text-primary' />
+        <Typography variant='body2'>Nenhum chat ainda.<br />Clique em "Novo Chat" para começar.</Typography>
+      </li>
+    )
+  }
+
+  return chatStore.chats.map((chat: any) => {
     const contact = chatStore.contacts.find(contact => contact.id === chat.userId) || chatStore.contacts[0]
-    const isChatActive = chatStore.activeUser?.id === contact.id
+    const isChatActive = (chatStore as any).activeChatId === chat.mongoId
+
+    // Pegar o último snippet de mensagem (evitar mostrar JSON bruto)
+    const lastMsg = chat.chat.length ? chat.chat[chat.chat.length - 1].message : null
+    let lastMsgPreview = lastMsg
+    if (lastMsg) {
+      try {
+        const parsed = JSON.parse(lastMsg)
+        if (parsed?.tipo === 'analise_estruturada') {
+          lastMsgPreview = `📊 Análise de ${parsed.ticker} — ${parsed.recomendacao}`
+        }
+      } catch { /* not JSON */ }
+    }
 
     return (
       <li
         key={chat.id}
-        className={classnames('flex items-start gap-4 bs-[60px] pli-3 plb-2 cursor-pointer rounded mbe-1', {
-          'bg-primary shadow-primarySm': isChatActive,
-          'text-[var(--mui-palette-primary-contrastText)]': isChatActive
-        })}
+        className={classnames(
+          'group flex items-center gap-3 pli-3 plb-2 cursor-pointer rounded-lg mbe-1 transition-all',
+          {
+            'bg-primary shadow-primarySm': isChatActive,
+            'text-[var(--mui-palette-primary-contrastText)]': isChatActive,
+            'hover:bg-actionHover': !isChatActive
+          }
+        )}
         onClick={() => {
+          dispatch(fetchChatHistory(chat.mongoId) as any)
+          dispatch({ type: 'chat/setActiveChat', payload: chat.mongoId } as any)
           getActiveUserData(chat.userId)
           isBelowMdScreen && setSidebarOpen(false)
           isBelowMdScreen && backdropOpen && setBackdropOpen(false)
         }}
       >
         <AvatarWithBadge
-          src={contact.avatar}
+          src={'/images/avatars/bot-icon.jpg'}
           isChatActive={isChatActive}
           alt={contact.fullName}
           badgeColor={statusObj[contact.status]}
           color={contact.avatarColor}
         />
         <div className='min-is-0 flex-auto'>
-          <Typography color='inherit'>{contact?.fullName}</Typography>
-          {chat.chat.length ? (
-            <Typography variant='body2' color={isChatActive ? 'inherit' : 'text.secondary'} className='truncate'>
-              {chat.chat[chat.chat.length - 1].message}
-            </Typography>
-          ) : (
-            <Typography variant='body2' color={isChatActive ? 'inherit' : 'text.secondary'} className='truncate'>
-              {contact.role}
-            </Typography>
-          )}
+          <Typography
+            color='inherit'
+            className='truncate font-medium'
+            style={{ maxWidth: 160 }}
+          >
+            {chat.title
+              ? (chat.title.length > 28 ? chat.title.substring(0, 25) + '...' : chat.title)
+              : contact?.fullName}
+          </Typography>
+          <Typography variant='body2' color={isChatActive ? 'inherit' : 'text.secondary'} className='truncate'>
+            {lastMsgPreview ?? contact.role}
+          </Typography>
         </div>
-        <div className='flex flex-col items-end justify-start'>
+        <div className='flex flex-col items-end justify-start gap-1 shrink-0'>
           <Typography
             variant='body2'
             color='inherit'
-            className={classnames('truncate', {
-              'text-textDisabled': !isChatActive
-            })}
+            className={classnames('truncate text-xs', { 'text-textDisabled': !isChatActive })}
           >
             {chat.chat.length ? formatDateToMonthShort(chat.chat[chat.chat.length - 1].time) : null}
           </Typography>
-          {chat.unseenMsgs > 0 ? <CustomChip round='true' label={chat.unseenMsgs} color='error' size='small' /> : null}
+          {/* Botão excluir — visível no hover ou quando ativo */}
+          <Tooltip title='Excluir chat' placement='left'>
+            <IconButton
+              size='small'
+              className={classnames(
+                'opacity-0 group-hover:opacity-100 transition-opacity',
+                { 'opacity-100': isChatActive }
+              )}
+              sx={{
+                color: isChatActive ? 'rgba(255,255,255,0.8)' : 'error.main',
+                '&:hover': { color: 'error.main', backgroundColor: 'rgba(255,77,77,0.12)' },
+                padding: '2px',
+              }}
+              onClick={e => {
+                e.stopPropagation()
+                onDeleteChat({ id: chat.id, title: chat.title })
+              }}
+            >
+              <i className='bx-trash text-base' />
+            </IconButton>
+          </Tooltip>
+          {chat.unseenMsgs > 0
+            ? <CustomChip round='true' label={chat.unseenMsgs} color='error' size='small' />
+            : null}
         </div>
       </li>
     )
   })
 }
 
-// Scroll wrapper for chat list
+// ─────────────────────────────────────────────
+// Scroll wrapper
+// ─────────────────────────────────────────────
 const ScrollWrapper = ({ children, isBelowLgScreen }: { children: ReactNode; isBelowLgScreen: boolean }) => {
   if (isBelowLgScreen) {
     return <div className='bs-full overflow-y-auto overflow-x-hidden'>{children}</div>
@@ -130,8 +188,10 @@ const ScrollWrapper = ({ children, isBelowLgScreen }: { children: ReactNode; isB
   }
 }
 
+// ─────────────────────────────────────────────
+// Main Component
+// ─────────────────────────────────────────────
 const SidebarLeft = (props: Props) => {
-  // Props
   const {
     chatStore,
     getActiveUserData,
@@ -146,19 +206,38 @@ const SidebarLeft = (props: Props) => {
     messageInputRef
   } = props
 
-  // States
   const [userSidebar, setUserSidebar] = useState(false)
-  const [searchValue, setSearchValue] = useState<string | null>()
+  const { confirm, notify } = useFeedback()
 
-  const handleChange = (event: any, newValue: string | null) => {
-    setSearchValue(newValue)
-    dispatch(addNewChat({ id: chatStore.contacts.find(contact => contact.fullName === newValue)?.id }))
-    getActiveUserData(
-      chatStore.contacts.find(contact => contact.fullName === newValue)?.id || (chatStore.activeUser?.id as number)
-    )
+  const handleDeleteChat = async (chat: { id: number; title?: string }) => {
+    const confirmed = await confirm({
+      title: 'Excluir conversa',
+      description: `Tem certeza que deseja excluir ${chat.title ? `"${chat.title}"` : 'esta conversa'}? Esta ação não pode ser desfeita.`,
+      confirmLabel: 'Excluir',
+      cancelLabel: 'Cancelar',
+      status: 'danger'
+    })
+
+    if (!confirmed) return
+
+    const token = localStorage.getItem('token') || ''
+    dispatch(deleteChat({ chatId: chat.id, token }) as any)
+  }
+
+  const handleNewChat = () => {
+    if (chatStore.chats.length >= 5) {
+      notify({
+        status: 'danger',
+        title: 'Limite de chats atingido',
+        description: 'Exclua uma conversa para criar outra. O máximo é 5 chats.',
+        duration: 5000
+      })
+      return
+    }
+    const token = localStorage.getItem('token') || ''
+    dispatch(createNewChat({ initialContext: 'Nova consulta ao NeuroFinance', token }) as any)
     isBelowMdScreen && setSidebarOpen(false)
     setBackdropOpen(false)
-    setSearchValue(null)
     messageInputRef.current?.focus()
   }
 
@@ -169,10 +248,7 @@ const SidebarLeft = (props: Props) => {
         onClose={() => setSidebarOpen(false)}
         className='bs-full'
         variant={!isBelowMdScreen ? 'permanent' : 'persistent'}
-        ModalProps={{
-          disablePortal: true,
-          keepMounted: true // Better open performance on mobile.
-        }}
+        ModalProps={{ disablePortal: true, keepMounted: true }}
         sx={{
           zIndex: isBelowMdScreen && sidebarOpen ? 11 : 10,
           position: !isBelowMdScreen ? 'static' : 'absolute',
@@ -185,73 +261,25 @@ const SidebarLeft = (props: Props) => {
           }
         }}
       >
+        {/* Header */}
         <div className='flex items-center plb-[19px] pli-6 gap-4 border-be'>
           <AvatarWithBadge
             alt={chatStore.profileUser.fullName}
             src={chatStore.profileUser.avatar}
             badgeColor={statusObj[chatStore.profileUser.status]}
-            onClick={() => {
-              setUserSidebar(true)
-            }}
+            onClick={() => setUserSidebar(true)}
           />
           <div className='flex is-full items-center flex-auto sm:gap-x-3'>
-            <Autocomplete
+            <Button
               fullWidth
-              size='small'
-              id='select-contact'
-              options={chatStore.contacts.map(contact => contact.fullName) || []}
-              value={searchValue || null}
-              onChange={handleChange}
-              renderInput={params => (
-                <CustomTextField
-                  {...params}
-                  variant='outlined'
-                  placeholder='Search Contacts'
-                  sx={{ '& .MuiFilledInput-root': { borderRadius: '999px !important' } }}
-                  slotProps={{
-                    input: {
-                      ...params.InputProps,
-                      startAdornment: (
-                        <InputAdornment position='start' className='mli-1'>
-                          <i className='bx-search' />
-                        </InputAdornment>
-                      )
-                    }
-                  }}
-                />
-              )}
-              renderOption={(props, option) => {
-                const contact = chatStore.contacts.find(contact => contact.fullName === option)
-
-                return (
-                  <li
-                    {...props}
-                    key={option.toLowerCase().replace(/\s+/g, '-')}
-                    className={classnames('gap-3 max-sm:pli-3', props.className)}
-                  >
-                    {contact ? (
-                      contact.avatar ? (
-                        <Avatar
-                          alt={contact.fullName}
-                          src={contact.avatar}
-                          key={option.toLowerCase().replace(/\s+/g, '-')}
-                        />
-                      ) : (
-                        <CustomAvatar
-                          color={contact.avatarColor as ThemeColor}
-                          skin='light'
-                          key={option.toLowerCase().replace(/\s+/g, '-')}
-                        >
-                          {getInitials(contact.fullName)}
-                        </CustomAvatar>
-                      )
-                    ) : null}
-                    {option}
-                  </li>
-                )
-              }}
-            />
-            {isBelowMdScreen ? (
+              variant='contained'
+              color='primary'
+              onClick={handleNewChat}
+              startIcon={<i className='bx-plus' />}
+            >
+              Novo Chat
+            </Button>
+            {isBelowMdScreen && (
               <IconButton
                 className='mis-2'
                 size='small'
@@ -262,9 +290,25 @@ const SidebarLeft = (props: Props) => {
               >
                 <i className='bx-x text-2xl' />
               </IconButton>
-            ) : null}
+            )}
           </div>
         </div>
+
+        {/* Contador de chats */}
+        <div className='flex items-center justify-between px-4 py-2 border-be bg-backgroundDefault'>
+          <Typography variant='caption' color='text.secondary'>
+            Conversas
+          </Typography>
+          <Typography
+            variant='caption'
+            color={chatStore.chats.length >= 5 ? 'error' : 'text.secondary'}
+            fontWeight={600}
+          >
+            {chatStore.chats.length}/5
+          </Typography>
+        </div>
+
+        {/* Chat List */}
         <ScrollWrapper isBelowLgScreen={isBelowLgScreen}>
           <ul className='p-3 pbs-4'>
             {renderChat({
@@ -273,7 +317,9 @@ const SidebarLeft = (props: Props) => {
               backdropOpen,
               setSidebarOpen,
               isBelowMdScreen,
-              setBackdropOpen
+              setBackdropOpen,
+              dispatch,
+              onDeleteChat: handleDeleteChat
             })}
           </ul>
         </ScrollWrapper>

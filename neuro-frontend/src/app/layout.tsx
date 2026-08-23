@@ -18,15 +18,13 @@ import '@assets/iconify-icons/generated-icons.css'
 
 export const metadata = {
   title: 'NeuroFinance',
-  description:
-    ''
+  description: ''
 }
 
 const RootLayout = async (props: ChildrenType) => {
   const { children } = props
 
   // Vars
-
   const systemMode = await getSystemMode()
   const direction = 'ltr'
 

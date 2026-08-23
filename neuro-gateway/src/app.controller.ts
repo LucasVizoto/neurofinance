@@ -1,7 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
 import { ProxyService } from './proxy/service/proxy.service';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Health')
 @Controller()
@@ -12,6 +12,7 @@ export class AppController {
   ) { }
 
   @Get()
+  @ApiOperation({ summary: 'Status do gateway', description: 'Mensagem de disponibilidade da API NeuroFinance.' })
   getHello(): string {
     return this.appService.getHello();
   }

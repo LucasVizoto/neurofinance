@@ -1,9 +1,9 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { HealthService } from './health.service';
 import { HealthCheckService } from 'src/common/health/health-check.service';
-import { ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { timestamp } from 'rxjs';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Health')
 @Controller('health')
 export class HealthController {
     constructor(
@@ -12,8 +12,8 @@ export class HealthController {
     ) { }
 
     @Get()
-    @ApiOperation({ summary: 'Health check do gateway' })
-    @ApiResponse({ status: 200, description: 'Gateway está saudável.' })
+    @ApiOperation({ summary: 'Saúde do gateway' })
+    @ApiResponse({ status: 200, description: 'Gateway no ar, com uptime e memória.' })
     async getHealth() {
         return {
             status: 'ok',
@@ -25,8 +25,8 @@ export class HealthController {
     }
 
     @Get('services')
-    @ApiOperation({ summary: 'Health check de todos os serviços' })
-    @ApiResponse({ status: 200, description: 'Retorna o status de saúde de todos os serviços.' })
+    @ApiOperation({ summary: 'Saúde dos microserviços' })
+    @ApiResponse({ status: 200, description: 'Status agregado de users, AI e demais dependências.' })
     async getServicesHealth() {
         const services = await this.healthCheckService.checkAllServices();
 
@@ -46,8 +46,8 @@ export class HealthController {
     }
 
     @Get('services/:serviceName')
-    @ApiOperation({ summary: 'Health check de um serviço específico' })
-    @ApiResponse({ status: 200, description: 'Status do serviço' })
+    @ApiOperation({ summary: 'Saúde de um serviço' })
+    @ApiResponse({ status: 200, description: 'Último status em cache daquele serviço.' })
     async getServiceHealth(@Param('serviceName') serviceName: string) {
         const cached = this.healthCheckService.getCachedHealth(serviceName);
 
@@ -62,15 +62,15 @@ export class HealthController {
     }
 
     @Get('ready')
-    @ApiOperation({ summary: 'Get readiness status' })
-    @ApiResponse({ status: 200, description: 'Readiness status retrived successfully' })
+    @ApiOperation({ summary: 'Readiness' })
+    @ApiResponse({ status: 200, description: 'Pronto para receber tráfego.' })
     async getReady() {
         return this.healthService.getReadyStatus();
     }
 
     @Get('live')
-    @ApiOperation({ summary: 'Get liveness status' })
-    @ApiResponse({ status: 200, description: 'Liveness status retrived successfully' })
+    @ApiOperation({ summary: 'Liveness' })
+    @ApiResponse({ status: 200, description: 'Processo vivo.' })
     async getLive() {
         return this.healthService.getLiveStatus();
     }

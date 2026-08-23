@@ -8,15 +8,15 @@ import type { StatusType, ChatDataType, ChatType, ContactType } from '@/types/ap
 
 const API_BASE = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3005'
 
-// Configurações do Axios para enviar credentials (cookies de sessão, etc)
+// Axios configurado com credentials
 const axiosInstance = axios.create({
   baseURL: API_BASE,
-  withCredentials: true, // Para enviar cookies
+  withCredentials: true,
 })
 
-// MOCK CONTACT para o Agente NeuroFinance
+// MOCK CONTACT — Agente NeuroFinance
 const neuroAgentContact: ContactType = {
-  id: 999, // Agent ID mockado
+  id: 999,
   fullName: 'NeuroFinance AI',
   role: 'Especialista em Ações',
   about: 'Seu assistente especializado no mercado financeiro.',
@@ -24,7 +24,10 @@ const neuroAgentContact: ContactType = {
   status: 'online'
 }
 
-type ExtendedChatDataType = ChatDataType & { activeChatId?: string | null }
+type ExtendedChatDataType = ChatDataType & {
+  activeChatId?: string | null
+  loadingAnalysis?: boolean
+}
 
 const initialState: ExtendedChatDataType = {
   profileUser: {
@@ -39,21 +42,30 @@ const initialState: ExtendedChatDataType = {
       isTwoStepAuthVerificationEnabled: false
     }
   },
-  contacts: [neuroAgentContact], // Apenas o nosso agente
+  contacts: [neuroAgentContact],
   chats: [],
   activeUser: undefined,
-  activeChatId: null
+  activeChatId: null,
+  loadingAnalysis: false,
 }
 
-// ----------------- ASYNC THUNKS ----------------- //
+// ─────────────────────────────────────────────
+// ASYNC THUNKS
+// ─────────────────────────────────────────────
 
 export const fetchChats = createAsyncThunk(
   'chat/fetchChats',
-  async (userId: string, { rejectWithValue }) => {
+  async (token: string, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get(`/chats/user/${userId}`)
-      // Retorna array de chats: [{ id, mongoId, title, createdAt }]
-      return response.data
+      const payloadBase64 = token.split('.')[1]
+      const payload = JSON.parse(atob(payloadBase64))
+      const userId = payload.sub
+      if (!userId) throw new Error('Invalid token: missing sub')
+
+      const response = await axiosInstance.get(`/chats/user/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      return response.data.chats ?? response.data
     } catch (err: any) {
       return rejectWithValue(err.response?.data || err.message)
     }
@@ -62,12 +74,26 @@ export const fetchChats = createAsyncThunk(
 
 export const createNewChat = createAsyncThunk(
   'chat/createNewChat',
-  async ({ title, token }: { title?: string, token: string }, { rejectWithValue }) => {
+  async ({ initialContext, token }: { initialContext: string, token: string }, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.post('/chats', { title }, {
+      const response = await axiosInstance.post('/chats', { initialContext }, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      return response.data // Retorna o chat recém criado
+      return response.data.chat ?? response.data
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data || err.message)
+    }
+  }
+)
+
+export const deleteChat = createAsyncThunk(
+  'chat/deleteChat',
+  async ({ chatId, token }: { chatId: number, token: string }, { rejectWithValue }) => {
+    try {
+      await axiosInstance.delete(`/chats/${chatId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      return chatId
     } catch (err: any) {
       return rejectWithValue(err.response?.data || err.message)
     }
@@ -78,8 +104,10 @@ export const fetchChatHistory = createAsyncThunk(
   'chat/fetchChatHistory',
   async (mongoId: string, { rejectWithValue }) => {
     try {
-      // O gateway encaminha para /ai/chat/:mongoId
-      const response = await axiosInstance.get(`/ai/chat/${mongoId}`)
+      const token = localStorage.getItem('token') || ''
+      const response = await axiosInstance.get(`/ai/chat/${mongoId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
       return { mongoId, data: response.data }
     } catch (err: any) {
       return rejectWithValue(err.response?.data || err.message)
@@ -94,18 +122,40 @@ export const sendMessage = createAsyncThunk(
       const response = await axiosInstance.post('/ai/chat', { mongo_id: mongoId, message, ticker }, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      return { mongoId, requestMessage: message, responseMessage: response.data.response }
+      return {
+        mongoId,
+        requestMessage: message,
+        responseMessage: response.data.response,
+        structured: response.data.structured ?? null
+      }
     } catch (err: any) {
       return rejectWithValue(err.response?.data || err.message)
     }
   }
 )
 
+export const analyzeAsset = createAsyncThunk(
+  'chat/analyzeAsset',
+  async ({ ticker, mongoId, token }: { ticker: string, mongoId: string, token: string }, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.post('/ai/analyze', { ticker, mongo_id: mongoId }, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      return { mongoId, ticker, result: response.data }
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data || err.message)
+    }
+  }
+)
+
+// ─────────────────────────────────────────────
+// SLICE
+// ─────────────────────────────────────────────
+
 export const chatSlice = createSlice({
   name: 'chat',
   initialState,
   reducers: {
-    // Esse reducer é chamado localmente quando clicamos num contato/chat na sidebar
     getActiveUserData: (state, action: PayloadAction<number>) => {
       const activeUser = state.contacts.find(user => user.id === action.payload)
       const chat = state.chats.find(chat => chat.userId === action.payload)
@@ -113,7 +163,6 @@ export const chatSlice = createSlice({
       if (chat && chat.unseenMsgs > 0) {
         chat.unseenMsgs = 0
       }
-
       if (activeUser) {
         state.activeUser = activeUser
       }
@@ -132,77 +181,142 @@ export const chatSlice = createSlice({
   extraReducers: (builder) => {
     // FETCH CHATS
     builder.addCase(fetchChats.fulfilled, (state, action) => {
-      // action.payload = array de chats do BD: { id, mongoId, title, createdAt }
-      // O template espera: { id, userId, unseenMsgs, chat: UserChatType[] }
-      
-      const newChats: ChatType[] = action.payload.map((c: any) => ({
-        id: c.id, // ID interno (Postgres)
-        userId: neuroAgentContact.id, // O "userId" no template é o ID do contato com quem estamos conversando
-        mongoId: c.mongoId, // Guardar o mongoId
-        title: c.title,
+      const chatsData = Array.isArray(action.payload) ? action.payload : []
+      const newChats: ChatType[] = chatsData.map((c: any) => ({
+        id: c.id,
+        userId: neuroAgentContact.id,
+        mongoId: c.mongo_id,
+        title: c.initialContext,
         unseenMsgs: 0,
-        chat: [] // Histórico será preenchido depois
+        chat: []
       }))
       state.chats = newChats
     })
-    
+    builder.addCase(fetchChats.rejected, (_state, action) => {
+      console.error('[fetchChats] error:', action.payload)
+    })
+
     // CREATE CHAT
     builder.addCase(createNewChat.fulfilled, (state, action) => {
       const createdChat = action.payload
       const newChat: ChatType = {
         id: createdChat.id,
         userId: neuroAgentContact.id,
-        mongoId: createdChat.mongoId,
-        title: createdChat.title,
+        mongoId: createdChat.mongo_id,
+        title: createdChat.initialContext,
         unseenMsgs: 0,
         chat: []
       }
       state.chats.unshift(newChat)
       state.activeUser = neuroAgentContact
-      state.activeChatId = createdChat.mongoId
+      state.activeChatId = createdChat.mongo_id
     })
-    
-    // FETCH HISTORY
+    builder.addCase(createNewChat.rejected, (_state, action) => {
+      console.error('[createNewChat] error:', action.payload)
+    })
+
+    // DELETE CHAT
+    builder.addCase(deleteChat.fulfilled, (state, action) => {
+      const deletedId = action.payload as number
+      state.chats = state.chats.filter((c: any) => c.id !== deletedId)
+      // Se o chat excluído era o ativo, limpar seleção
+      const wasActive = state.chats.find((c: any) => c.id === deletedId)
+      if (!wasActive) {
+        // já foi removido — verificar se era o ativo
+      }
+      // Reset activeUser se não há mais chats com esse mongoId
+      if (state.activeChatId && !state.chats.some((c: any) => c.mongoId === state.activeChatId)) {
+        state.activeChatId = null
+        state.activeUser = undefined
+      }
+    })
+    builder.addCase(deleteChat.rejected, (_state, action) => {
+      console.error('[deleteChat] error:', action.payload)
+    })
+
+    // FETCH CHAT HISTORY
     builder.addCase(fetchChatHistory.fulfilled, (state, action) => {
       const { mongoId, data } = action.payload
-      // Encontrar o chat no state
       // @ts-ignore
       const chatToUpdate = state.chats.find(c => c.mongoId === mongoId)
       if (chatToUpdate && data.messages) {
-        // mapear mensagens
-        chatToUpdate.chat = data.messages.map((m: any) => ({
-          message: m.content,
-          time: new Date(),
-          senderId: m.type === 'ai' ? neuroAgentContact.id : state.profileUser.id,
-          msgStatus: { isSent: true, isDelivered: true, isSeen: true }
-        }))
+        chatToUpdate.chat = data.messages.map((m: any) => {
+          const raw = m.content
+          const message = typeof raw === 'string' ? raw : JSON.stringify(raw ?? '')
+          return {
+            message,
+            time: new Date(),
+            senderId: m.type === 'ai' ? neuroAgentContact.id : state.profileUser.id,
+            msgStatus: { isSent: true, isDelivered: true, isSeen: true }
+          }
+        })
       }
     })
-    
+    builder.addCase(fetchChatHistory.rejected, (_state, action) => {
+      console.error('[fetchChatHistory] error:', action.payload)
+    })
+
     // SEND MESSAGE
     builder.addCase(sendMessage.fulfilled, (state, action) => {
-      const { mongoId, requestMessage, responseMessage } = action.payload
-      
+      const { mongoId, requestMessage, responseMessage, structured } = action.payload
+
       // @ts-ignore
       const existingChat = state.chats.find(chat => chat.mongoId === mongoId)
       if (existingChat) {
+        // Mensagem do usuário
         existingChat.chat.push({
           message: requestMessage,
           time: new Date(),
           senderId: state.profileUser.id,
           msgStatus: { isSent: true, isDelivered: true, isSeen: true }
         })
+        // Resposta do agente — salvar JSON estruturado se existir
         existingChat.chat.push({
-          message: responseMessage,
+          message: structured ? JSON.stringify(structured) : responseMessage,
           time: new Date(),
           senderId: neuroAgentContact.id,
           msgStatus: { isSent: true, isDelivered: true, isSeen: true }
         })
-        
+
         // Mover para o topo
         state.chats = state.chats.filter((c: any) => c.mongoId !== mongoId)
         state.chats.unshift(existingChat)
       }
+    })
+    builder.addCase(sendMessage.rejected, (_state, action) => {
+      console.error('[sendMessage] error:', action.payload)
+    })
+
+    // ANALYZE ASSET
+    builder.addCase(analyzeAsset.pending, (state) => {
+      state.loadingAnalysis = true
+    })
+    builder.addCase(analyzeAsset.fulfilled, (state, action) => {
+      state.loadingAnalysis = false
+      const { mongoId, ticker, result } = action.payload
+
+      // @ts-ignore
+      const existingChat = state.chats.find(chat => chat.mongoId === mongoId)
+      if (existingChat && result.success && result.analysis) {
+        existingChat.chat.push({
+          message: `Analisar ativo ${ticker}`,
+          time: new Date(),
+          senderId: state.profileUser.id,
+          msgStatus: { isSent: true, isDelivered: true, isSeen: true }
+        })
+        existingChat.chat.push({
+          message: JSON.stringify(result.analysis),
+          time: new Date(),
+          senderId: neuroAgentContact.id,
+          msgStatus: { isSent: true, isDelivered: true, isSeen: true }
+        })
+        state.chats = state.chats.filter((c: any) => c.mongoId !== mongoId)
+        state.chats.unshift(existingChat)
+      }
+    })
+    builder.addCase(analyzeAsset.rejected, (state, action) => {
+      state.loadingAnalysis = false
+      console.error('[analyzeAsset] error:', action.payload)
     })
   }
 })

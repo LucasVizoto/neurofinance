@@ -34,7 +34,39 @@ type Props = {
   isBelowSmScreen: boolean
   messageInputRef: RefObject<HTMLDivElement>
 }
-//... skipping EmojiPicker for diff, replacing only SendMsgForm Props
+
+type EmojiPickerProps = {
+  anchorRef: RefObject<HTMLButtonElement>
+  openEmojiPicker: boolean
+  setOpenEmojiPicker: (value: boolean) => void
+  isBelowSmScreen: boolean
+  onChange: (value: string) => void
+}
+
+const EmojiPicker = ({ anchorRef, openEmojiPicker, setOpenEmojiPicker, onChange }: EmojiPickerProps) => {
+  return (
+    <Popper open={openEmojiPicker} anchorEl={anchorRef.current} placement='top-end' transition>
+      {({ TransitionProps }) => (
+        <Fade {...TransitionProps} timeout={350}>
+          <Paper>
+            <ClickAwayListener onClickAway={() => setOpenEmojiPicker(false)}>
+              <div>
+                <Picker
+                  data={data}
+                  onEmojiSelect={(emoji: { native: string }) => {
+                    onChange(emoji.native)
+                    setOpenEmojiPicker(false)
+                  }}
+                />
+              </div>
+            </ClickAwayListener>
+          </Paper>
+        </Fade>
+      )}
+    </Popper>
+  )
+}
+
 const SendMsgForm = ({ dispatch, activeUser, activeChatId, isBelowSmScreen, messageInputRef }: Props) => {
   // States
   const [msg, setMsg] = useState('')

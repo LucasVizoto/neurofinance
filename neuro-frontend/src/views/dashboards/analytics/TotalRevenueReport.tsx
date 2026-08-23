@@ -1,8 +1,5 @@
 'use client'
 
-// React Imports
-import { useState } from 'react'
-
 // Next Imports
 import dynamic from 'next/dynamic'
 
@@ -21,9 +18,10 @@ const AppReactApexCharts = dynamic(() => import('@/libs/styles/AppReactApexChart
 type Props = {
   history: Array<{ date: string; price: number; volume: number }>
   ticker: string
+  period?: string
 }
 
-const TotalRevenueReport = ({ history, ticker }: Props) => {
+const TotalRevenueReport = ({ history, ticker, period }: Props) => {
   // Hooks
   const theme = useTheme()
 
@@ -55,6 +53,8 @@ const TotalRevenueReport = ({ history, ticker }: Props) => {
     xaxis: {
       categories: dates,
       labels: {
+        rotate: period === '1D' || period === '1W' ? -45 : 0,
+        hideOverlappingLabels: true,
         style: {
           colors: 'var(--mui-palette-text-disabled)',
           fontFamily: theme.typography.fontFamily,
@@ -76,7 +76,11 @@ const TotalRevenueReport = ({ history, ticker }: Props) => {
 
   return (
     <Card>
-      <CardHeader title={`Histórico de Cotação - ${ticker}`} />
+      <CardHeader
+        title={`Histórico de Cotação - ${ticker}`}
+        subheader={period ? `Período ${period}` : undefined}
+        titleTypographyProps={{ noWrap: true, className: 'truncate' }}
+      />
       <CardContent>
         <AppReactApexCharts type='line' height={400} width='100%' series={series} options={options} />
       </CardContent>

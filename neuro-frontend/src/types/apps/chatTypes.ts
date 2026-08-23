@@ -39,6 +39,7 @@ export type ChatType = {
   id: number
   userId: number
   mongoId?: string
+  title?: string
   unseenMsgs: number
   chat: UserChatType[]
 }
@@ -48,4 +49,6 @@ export type ChatDataType = {
   contacts: ContactType[]
   chats: ChatType[]
   activeUser?: ContactType
+  activeChatId?: string | null
+  loadingAnalysis?: boolean
 }

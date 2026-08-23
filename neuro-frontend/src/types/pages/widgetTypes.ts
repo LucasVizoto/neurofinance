@@ -53,10 +53,13 @@ export type CardStatsVerticalWithHeaderProps = {
 
 export type CardStatsVerticalProps = {
   title: string
-  imageSrc: string
+  imageSrc?: string
+  icon?: string
+  iconColor?: ThemeColor
   stats: string
-  trendNumber: number
+  trendNumber?: number
   trend?: 'positive' | 'negative'
+  trendLabel?: string
 }
 
 export type CardStatsType = {

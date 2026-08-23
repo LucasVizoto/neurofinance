@@ -1,3 +1,5 @@
+'use client'
+
 // React Imports
 import { useEffect, useState } from 'react'
 import type { RefObject } from 'react'
@@ -7,10 +9,17 @@ import Button from '@mui/material/Button'
 import Typography from '@mui/material/Typography'
 import IconButton from '@mui/material/IconButton'
 import CardContent from '@mui/material/CardContent'
+import TextField from '@mui/material/TextField'
+import CircularProgress from '@mui/material/CircularProgress'
+import Box from '@mui/material/Box'
+import Tooltip from '@mui/material/Tooltip'
 
 // Type Imports
 import type { AppDispatch } from '@/redux-store'
 import type { ChatDataType, ContactType } from '@/types/apps/chatTypes'
+
+// Slice Imports
+import { analyzeAsset } from '@/redux-store/slices/chat'
 
 // Component Imports
 import OptionMenu from '@core/components/option-menu'
@@ -63,8 +72,78 @@ const UserAvatar = ({
   </div>
 )
 
+// ─────────────────────────────────────────────
+// Ticker Analysis Bar
+// ─────────────────────────────────────────────
+
+const TickerAnalysisBar = ({
+  dispatch,
+  activeChatId,
+  loadingAnalysis
+}: {
+  dispatch: AppDispatch
+  activeChatId: string | null | undefined
+  loadingAnalysis: boolean
+}) => {
+  const [ticker, setTicker] = useState('')
+
+  const handleAnalyze = () => {
+    if (!ticker.trim() || !activeChatId) return
+    const token = localStorage.getItem('token') || ''
+    dispatch(analyzeAsset({ ticker: ticker.trim().toUpperCase(), mongoId: activeChatId, token }) as any)
+    setTicker('')
+  }
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1.5,
+        px: 3,
+        py: 1.25,
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+        backgroundColor: 'background.paper',
+      }}
+    >
+      <i className='bx-bar-chart-alt-2 text-primary text-xl' />
+      <TextField
+        size='small'
+        placeholder='Ticker (ex: GOOGL, AAPL)'
+        value={ticker}
+        onChange={e => setTicker(e.target.value.toUpperCase())}
+        onKeyDown={e => { if (e.key === 'Enter') handleAnalyze() }}
+        disabled={loadingAnalysis}
+        sx={{ width: 200, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+        inputProps={{ maxLength: 12 }}
+      />
+      <Tooltip title='Rodar modelo ML + análise Gemini'>
+        <span>
+          <Button
+            variant='contained'
+            size='small'
+            color='primary'
+            onClick={handleAnalyze}
+            disabled={!ticker.trim() || !activeChatId || loadingAnalysis}
+            startIcon={loadingAnalysis ? <CircularProgress size={14} color='inherit' /> : <i className='bx-brain' />}
+            sx={{ borderRadius: 2, textTransform: 'none', whiteSpace: 'nowrap' }}
+          >
+            {loadingAnalysis ? 'Analisando...' : 'Analisar Ativo'}
+          </Button>
+        </span>
+      </Tooltip>
+      <Typography variant='caption' color='text.secondary'>
+      </Typography>
+    </Box>
+  )
+}
+
+// ─────────────────────────────────────────────
+// Main Component
+// ─────────────────────────────────────────────
+
 const ChatContent = (props: Props) => {
-  // Props
   const {
     chatStore,
     dispatch,
@@ -77,13 +156,9 @@ const ChatContent = (props: Props) => {
     messageInputRef
   } = props
 
-  // States
   const [userProfileRightOpen, setUserProfileRightOpen] = useState(false)
-
-  // Vars
   const { activeUser } = chatStore
 
-  // Close user profile right drawer if backdrop is closed and user profile right drawer is open
   useEffect(() => {
     if (!backdropOpen && userProfileRightOpen) {
       setUserProfileRightOpen(false)
@@ -96,7 +171,7 @@ const ChatContent = (props: Props) => {
       <CustomAvatar variant='circular' size={98} color='primary' skin='light'>
         <i className='bx-message-rounded text-[50px]' />
       </CustomAvatar>
-      <Typography className='text-center'>Select a contact to start a conversation.</Typography>
+      <Typography className='text-center'>Selecione ou crie um chat para começar.</Typography>
       {isBelowMdScreen && (
         <Button
           variant='contained'
@@ -106,7 +181,7 @@ const ChatContent = (props: Props) => {
             isBelowSmScreen ? setBackdropOpen(false) : setBackdropOpen(true)
           }}
         >
-          Select Contact
+          Abrir Chats
         </Button>
       )}
     </CardContent>
@@ -114,6 +189,7 @@ const ChatContent = (props: Props) => {
     <>
       {activeUser && (
         <div className='flex flex-col flex-grow bs-full bg-backgroundChat'>
+          {/* Header */}
           <div className='flex items-center justify-between border-be plb-[17px] pli-6 bg-backgroundPaper'>
             {isBelowMdScreen ? (
               <div className='flex items-center gap-4'>
@@ -145,7 +221,7 @@ const ChatContent = (props: Props) => {
                 iconClassName='text-secondary'
                 options={[
                   {
-                    text: 'View Contact',
+                    text: 'Ver Perfil',
                     menuItemProps: {
                       onClick: () => {
                         setUserProfileRightOpen(true)
@@ -153,20 +229,10 @@ const ChatContent = (props: Props) => {
                       }
                     }
                   },
-                  'Mute Notifications',
-                  'Block Contact',
-                  'Clear Chat',
-                  'Block'
                 ]}
               />
             ) : (
               <div className='flex items-center gap-1'>
-                <IconButton color='secondary'>
-                  <i className='bx-phone' />
-                </IconButton>
-                <IconButton color='secondary'>
-                  <i className='bx-video' />
-                </IconButton>
                 <IconButton color='secondary'>
                   <i className='bx-search' />
                 </IconButton>
@@ -174,7 +240,7 @@ const ChatContent = (props: Props) => {
                   iconButtonProps={{ size: 'medium', color: 'secondary' }}
                   options={[
                     {
-                      text: 'View Contact',
+                      text: 'Ver Perfil',
                       menuItemProps: {
                         onClick: () => {
                           setUserProfileRightOpen(true)
@@ -182,15 +248,18 @@ const ChatContent = (props: Props) => {
                         }
                       }
                     },
-                    'Mute Notifications',
-                    'Block Contact',
-                    'Clear Chat',
-                    'Block'
                   ]}
                 />
               </div>
             )}
           </div>
+
+          {/* Ticker Analysis Bar */}
+          <TickerAnalysisBar
+            dispatch={dispatch}
+            activeChatId={chatStore.activeChatId}
+            loadingAnalysis={chatStore.loadingAnalysis ?? false}
+          />
 
           <ChatLog
             chatStore={chatStore}

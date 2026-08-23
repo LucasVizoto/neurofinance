@@ -1,38 +1,63 @@
 // MUI Imports
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
-import CardHeader from '@mui/material/CardHeader'
+import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 
 // Third-party Imports
 import classnames from 'classnames'
 
 // Type Imports
-import { CardStatsVerticalProps } from '@/types/pages/widgetTypes'
+import type { CardStatsVerticalProps } from '@/types/pages/widgetTypes'
 
-// Components Imports
-import OptionMenu from '@core/components/option-menu'
+// Component Imports
+import CustomAvatar from '@core/components/mui/Avatar'
 
 const Vertical = (props: CardStatsVerticalProps) => {
-  // Props
-  const { title, imageSrc, stats, trendNumber, trend } = props
+  const { title, icon = 'bx-line-chart', iconColor = 'primary', stats, trendNumber, trend, trendLabel } = props
+  const showTrend = Boolean(trendLabel) || typeof trendNumber === 'number'
 
   return (
-    <Card>
-      <CardHeader
-        avatar={<img src={imageSrc} alt={title} width='40' height='40' />}
-        action={<OptionMenu options={['Yesterday', 'Last Week', 'Last Month']} />}
-      />
+    <Card className='overflow-hidden h-full'>
+      <CardContent className='flex items-start gap-3 min-w-0'>
+        <CustomAvatar variant='rounded' skin='light' color={iconColor} size={42} className='shrink-0'>
+          <i className={classnames(icon, 'text-[22px]')} />
+        </CustomAvatar>
 
-      <CardContent className='flex flex-col gap-y-3'>
-        <div className='flex flex-col gap-0.5'>
-          <Typography>{title}</Typography>
-          <Typography variant='h4'>{stats}</Typography>
+        <div className='min-w-0 flex-1 flex flex-col gap-1'>
+          <Typography variant='body2' color='text.secondary' noWrap title={title} className='truncate'>
+            {title}
+          </Typography>
+
+          <Tooltip title={stats}>
+            <Typography
+              variant='h4'
+              noWrap
+              className='truncate whitespace-nowrap text-xl sm:text-2xl leading-tight tabular-nums'
+            >
+              {stats}
+            </Typography>
+          </Tooltip>
+
+          {showTrend && (
+            <Typography
+              color={trend === 'negative' ? 'error.main' : 'success.main'}
+              className='flex gap-0.5 items-center whitespace-nowrap min-w-0'
+            >
+              {!trendLabel && (
+                <i
+                  className={classnames(
+                    'text-lg shrink-0',
+                    trend === 'negative' ? 'bx-down-arrow-alt' : 'bx-up-arrow-alt'
+                  )}
+                />
+              )}
+              <span className='text-[13px] font-medium truncate'>
+                {trendLabel ?? `${Number(trendNumber ?? 0).toFixed(2)}%`}
+              </span>
+            </Typography>
+          )}
         </div>
-        <Typography color={trend === 'positive' ? 'success.main' : 'error.main'} className='flex gap-0.5 items-center'>
-          <i className={classnames('text-xl', trend === 'positive' ? 'bx-up-arrow-alt' : 'bx-down-arrow-alt')} />
-          <span className='text-[13px] font-medium'>{trendNumber}%</span>
-        </Typography>
       </CardContent>
     </Card>
   )

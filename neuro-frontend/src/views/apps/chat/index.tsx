@@ -16,7 +16,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import type { RootState } from '@/redux-store'
 
 // Slice Imports
-import { getActiveUserData, fetchChats } from '@/redux-store/slices/chat'
+import { getActiveUserData, fetchChats, fetchChatHistory } from '@/redux-store/slices/chat'
 import type { AppDispatch } from '@/redux-store'
 
 // Component Imports
@@ -45,12 +45,19 @@ const ChatWrapper = () => {
   const isBelowMdScreen = useMediaQuery((theme: Theme) => theme.breakpoints.down('md'))
   const isBelowSmScreen = useMediaQuery((theme: Theme) => theme.breakpoints.down('sm'))
 
-  // Fetch chats on mount
+  // Fetch chats on mount, then hydrate each conversation from MongoDB
   useEffect(() => {
-    const userId = localStorage.getItem('userId')
-    if (userId) {
-      dispatch(fetchChats(userId))
-    }
+    const token = localStorage.getItem('token')
+    if (!token) return
+
+    dispatch(fetchChats(token)).then(action => {
+      if (fetchChats.fulfilled.match(action)) {
+        const chats = Array.isArray(action.payload) ? action.payload : []
+        chats.forEach((c: { mongo_id?: string }) => {
+          if (c.mongo_id) dispatch(fetchChatHistory(c.mongo_id))
+        })
+      }
+    })
   }, [dispatch])
 
   // Get active user’s data

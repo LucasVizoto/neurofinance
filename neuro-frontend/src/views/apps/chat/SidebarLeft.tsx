@@ -30,6 +30,7 @@ import CustomChip from '@core/components/mui/Chip'
 import UserProfileLeft from './UserProfileLeft'
 import AvatarWithBadge from './AvatarWithBadge'
 import CustomTextField from '@core/components/mui/TextField'
+import { useFeedback } from '@/components/heroui'
 
 // Util Imports
 import { getInitials } from '@/utils/getInitials'
@@ -64,13 +65,14 @@ type RenderChatType = {
   setBackdropOpen: (value: boolean) => void
   isBelowMdScreen: boolean
   dispatch: AppDispatch
+  onDeleteChat: (chat: { id: number; title?: string }) => void
 }
 
 // ─────────────────────────────────────────────
 // Chat list renderer (with delete button)
 // ─────────────────────────────────────────────
 const renderChat = (props: RenderChatType) => {
-  const { chatStore, getActiveUserData, setSidebarOpen, backdropOpen, setBackdropOpen, isBelowMdScreen, dispatch } = props
+  const { chatStore, getActiveUserData, setSidebarOpen, backdropOpen, setBackdropOpen, isBelowMdScreen, dispatch, onDeleteChat } = props
 
   if (chatStore.chats.length === 0) {
     return (
@@ -117,7 +119,7 @@ const renderChat = (props: RenderChatType) => {
         }}
       >
         <AvatarWithBadge
-          src={contact.avatar}
+          src={'/images/avatars/bot-icon.jpg'}
           isChatActive={isChatActive}
           alt={contact.fullName}
           badgeColor={statusObj[contact.status]}
@@ -159,11 +161,8 @@ const renderChat = (props: RenderChatType) => {
                 padding: '2px',
               }}
               onClick={e => {
-                e.stopPropagation() // não ativar o chat ao excluir
-                const token = localStorage.getItem('token') || ''
-                if (window.confirm(`Excluir o chat "${chat.title || 'este chat'}"? Esta ação não pode ser desfeita.`)) {
-                  dispatch(deleteChat({ chatId: chat.id, token }) as any)
-                }
+                e.stopPropagation()
+                onDeleteChat({ id: chat.id, title: chat.title })
               }}
             >
               <i className='bx-trash text-base' />
@@ -208,11 +207,30 @@ const SidebarLeft = (props: Props) => {
   } = props
 
   const [userSidebar, setUserSidebar] = useState(false)
+  const { confirm, notify } = useFeedback()
+
+  const handleDeleteChat = async (chat: { id: number; title?: string }) => {
+    const confirmed = await confirm({
+      title: 'Excluir conversa',
+      description: `Tem certeza que deseja excluir ${chat.title ? `"${chat.title}"` : 'esta conversa'}? Esta ação não pode ser desfeita.`,
+      confirmLabel: 'Excluir',
+      cancelLabel: 'Cancelar',
+      status: 'danger'
+    })
+
+    if (!confirmed) return
+
+    const token = localStorage.getItem('token') || ''
+    dispatch(deleteChat({ chatId: chat.id, token }) as any)
+  }
 
   const handleNewChat = () => {
     if (chatStore.chats.length >= 5) {
-      import('react-toastify').then(({ toast }) => {
-        toast.error('Limite máximo de 5 chats atingido. Exclua um chat para continuar.', { autoClose: 5000 })
+      notify({
+        status: 'danger',
+        title: 'Limite de chats atingido',
+        description: 'Exclua uma conversa para criar outra. O máximo é 5 chats.',
+        duration: 5000
       })
       return
     }
@@ -300,7 +318,8 @@ const SidebarLeft = (props: Props) => {
               setSidebarOpen,
               isBelowMdScreen,
               setBackdropOpen,
-              dispatch
+              dispatch,
+              onDeleteChat: handleDeleteChat
             })}
           </ul>
         </ScrollWrapper>

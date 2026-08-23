@@ -1,18 +1,15 @@
 'use client'
 
-// Next Imports
 import dynamic from 'next/dynamic'
 
-// MUI Imports
 import Card from '@mui/material/Card'
-import CardHeader from '@mui/material/CardHeader'
 import CardContent from '@mui/material/CardContent'
+import CardHeader from '@mui/material/CardHeader'
 import { useTheme } from '@mui/material/styles'
-
-// Third Party Imports
 import type { ApexOptions } from 'apexcharts'
 
-// Styled Component Imports
+import { historyTickAmount, historyXAxisFormat, toHistorySeries } from '@/libs/charts/historyAxis'
+
 const AppReactApexCharts = dynamic(() => import('@/libs/styles/AppReactApexCharts'))
 
 type Props = {
@@ -22,22 +19,28 @@ type Props = {
 }
 
 const TotalRevenueReport = ({ history, ticker, period }: Props) => {
-  // Hooks
   const theme = useTheme()
-
-  const dates = history ? history.map(item => item.date) : []
-  const prices = history ? history.map(item => item.price) : []
+  const points = history ?? []
 
   const series = [
-    { name: 'Cotação (R$)', data: prices }
+    {
+      name: 'Cotação (R$)',
+      data: toHistorySeries(points.map(item => ({ date: item.date, value: item.price })))
+    }
   ]
 
   const options: ApexOptions = {
     chart: {
       parentHeightOffset: 0,
-      toolbar: { show: false }
+      toolbar: { show: false },
+      zoom: { enabled: false },
+      redrawOnParentResize: true,
+      redrawOnWindowResize: true
     },
-    tooltip: { shared: false },
+    tooltip: {
+      shared: false,
+      x: { format: historyXAxisFormat(period) }
+    },
     dataLabels: { enabled: false },
     stroke: {
       curve: 'smooth',
@@ -46,15 +49,22 @@ const TotalRevenueReport = ({ history, ticker, period }: Props) => {
     colors: ['var(--mui-palette-primary-main)'],
     grid: {
       borderColor: 'var(--mui-palette-divider)',
-      xaxis: { lines: { show: true } },
+      xaxis: { lines: { show: false } },
       yaxis: { lines: { show: true } },
-      padding: { top: -20, bottom: -10, left: 20, right: 20 }
+      padding: { top: -20, bottom: 0, left: 16, right: 16 }
     },
     xaxis: {
-      categories: dates,
+      type: 'datetime',
+      tickAmount: historyTickAmount(points.length),
+      axisTicks: { show: false },
+      axisBorder: { show: false },
       labels: {
-        rotate: period === '1D' || period === '1W' ? -45 : 0,
+        datetimeUTC: false,
+        format: historyXAxisFormat(period),
         hideOverlappingLabels: true,
+        rotate: 0,
+        trim: false,
+        minHeight: 28,
         style: {
           colors: 'var(--mui-palette-text-disabled)',
           fontFamily: theme.typography.fontFamily,

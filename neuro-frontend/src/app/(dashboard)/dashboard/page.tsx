@@ -1,13 +1,13 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { useSelector } from 'react-redux'
 
 import Grid from '@mui/material/Grid2'
 import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
 import Typography from '@mui/material/Typography'
 import CircularProgress from '@mui/material/CircularProgress'
-import Alert from '@mui/material/Alert'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import axios from 'axios'
@@ -19,7 +19,10 @@ import TopValuations from '@views/dashboards/analytics/TopValuations'
 import NewsFeed from '@views/dashboards/analytics/NewsFeed'
 import Vertical from '@/components/card-statistics/Vertical'
 import { GATEWAY_URL, authHeaders } from '@/libs/gateway'
+import { Alert, useFeedback } from '@/components/heroui'
+import type { RootState } from '@/redux-store'
 
+const FALLBACK_TICKER = 'AAPL'
 const PERIODS = ['1D', '1W', '1M', '6M', '1Y'] as const
 type Period = (typeof PERIODS)[number]
 
@@ -40,9 +43,15 @@ const formatMarketCap = (value?: number | null, currency = 'BRL') => {
   return `${prefix} ${value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`
 }
 
+const resolveDefaultTicker = (value?: string | null) =>
+  (value?.trim() || FALLBACK_TICKER).toUpperCase()
+
 const DashboardAnalytics = () => {
-  const [ticker, setTicker] = useState('PETR4.SA')
-  const [inputTicker, setInputTicker] = useState('PETR4.SA')
+  const { notify } = useFeedback()
+  const preferenceTicker = useSelector((state: RootState) => state.userReducer.data?.preferenceTicker)
+  const defaultTicker = resolveDefaultTicker(preferenceTicker)
+  const [ticker, setTicker] = useState(defaultTicker)
+  const [inputTicker, setInputTicker] = useState(defaultTicker)
   const [period, setPeriod] = useState<Period>('1M')
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -72,12 +81,18 @@ const DashboardAnalytics = () => {
       setData(res.data)
     } catch (err) {
       console.error('Error fetching dashboard data:', err)
-      setError('Não foi possível carregar os dados do ativo.')
+      const message = `Não foi possível carregar os dados de ${symbol}.`
+      setError(message)
       setData(null)
+      notify({
+        status: 'danger',
+        title: 'Falha na busca do ticker',
+        description: message
+      })
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [notify])
 
   const fetchGrowth = useCallback(async (symbol: string, selectedPeriod: Period) => {
     setGrowthLoading(true)
@@ -210,7 +225,13 @@ const DashboardAnalytics = () => {
 
       {error && (
         <Grid size={{ xs: 12 }}>
-          <Alert severity='warning'>{error}</Alert>
+          <Alert status='danger'>
+            <Alert.Indicator />
+            <Alert.Content>
+              <Alert.Title>Falha na busca do ticker</Alert.Title>
+              <Alert.Description>{error}</Alert.Description>
+            </Alert.Content>
+          </Alert>
         </Grid>
       )}
 

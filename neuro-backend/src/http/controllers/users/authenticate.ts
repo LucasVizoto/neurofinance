@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { InvalidCredentialsError } from '@/use-cases/_errors/invalid-credentials-error.js'
 import { makeAuthenticateUseCase } from '@/use-cases/users/composers/make-authenticate-use-case.js'
 import { DisabledUserError } from '@/use-cases/_errors/disabled-user-error.js'
+import { setRefreshCookie, signUserSession } from '@/http/helpers/sign-user-session.js'
 
 export async function authenticate(request: FastifyRequest, reply: FastifyReply) {
     const authenticateBodySchema = z.object({
@@ -21,32 +22,9 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
             password
         })
 
-        const token = await reply.jwtSign(
-            {},
-            {
-                sign: {
-                    sub: String(user.id),
-                },
-            },
-        )
+        const { token, refreshToken } = await signUserSession(reply, user.id)
 
-        const refreshToken = await reply.jwtSign(
-            {},
-            {
-                sign: {
-                    sub: String(user.id),
-                    expiresIn: '7d', //estou indicando que se meu usuário não logar em 7 dias será necessário renovar o token
-                },
-            },
-        )
-
-        return reply
-            .setCookie('refreshToken', refreshToken, {
-                path: '/', //estou definindo quais as rotas do backend terão acesso ao cookie
-                secure: true, // estou dizes se o cookie só pode ser enviado em conexões https
-                sameSite: true, // estou definindo que o cookie só pode ser enviado para o mesmo domínio
-                httpOnly: true, // estou definindo que o cookie não pode ser acessado via javascript no frontend  
-            })
+        return setRefreshCookie(reply, refreshToken)
             .status(200)
             .send({
                 token,

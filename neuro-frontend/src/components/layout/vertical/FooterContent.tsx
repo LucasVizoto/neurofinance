@@ -24,27 +24,21 @@ const FooterContent = () => {
         <span className='text-textSecondary'>{`© ${new Date().getFullYear()}, Made with `}</span>
         <span>{`❤️`}</span>
         <span className='text-textSecondary'>{` by `}</span>
-        <Link href='https://themeselection.com' target='_blank' className='text-primary'>
-          ThemeSelection
+        <Link href='https://github.com/LucasVizoto' target='_blank' className='text-primary'>
+          Ana Laura and Lucas Vizoto
         </Link>
       </p>
       {!isBreakpointReached && (
         <div className='flex items-center gap-4'>
-          <Link href='https://themeselection.com/license' target='_blank' className='text-primary'>
+          <Link href='https://opensource.org/license/MIT' target='_blank' className='text-primary'>
             License
           </Link>
-          <Link href='https://themeselection.com' target='_blank' className='text-primary'>
-            More Themes
-          </Link>
           <Link
-            href='https://demos.themeselection.com/sneat-mui-nextjs-admin-template/documentation'
+            href={`${process.env.NEXT_PUBLIC_API_URL}/api`}
             target='_blank'
             className='text-primary'
           >
             Documentation
-          </Link>
-          <Link href='https://themeselection.com/support' target='_blank' className='text-primary'>
-            Support
           </Link>
         </div>
       )}

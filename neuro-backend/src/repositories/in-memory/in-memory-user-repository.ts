@@ -27,7 +27,25 @@ export class InMemoryUsersRepository implements UsersRepository {
     }
 
     async findByCpf(cpf: string) {
+        if (!cpf) {
+            return null
+        }
+
         const user = this.items.find(item => item.cpf == cpf)
+
+        if (!user) {
+            return null
+        }
+
+        return user
+    }
+
+    async findByGoogleId(googleId: string) {
+        if (!googleId) {
+            return null
+        }
+
+        const user = this.items.find(item => item.googleId == googleId)
 
         if (!user) {
             return null
@@ -51,7 +69,8 @@ export class InMemoryUsersRepository implements UsersRepository {
             id: data.id ?? randomUUID(),
             fullname: data.fullname!,
             username: data.username!,
-            cpf: data.cpf!,
+            cpf: data.cpf ?? null,
+            googleId: data.googleId ?? null,
             customColor: data.customColor ?? null,
             preferenceTicker: data.preferenceTicker ?? null,
             profileImageName: data.profileImageName ?? null,

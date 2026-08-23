@@ -12,6 +12,7 @@ import { CustomThrottlerGuard } from './guards/throttler.guard';
 import { HealthModule } from './health/health.module';
 import { AiModule } from './ai/ai.module';
 import { ChatsModule } from './chats/chats.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { ChatsModule } from './chats/chats.module';
     HealthModule,
     AiModule,
     ChatsModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [

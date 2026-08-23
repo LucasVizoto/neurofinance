@@ -182,6 +182,7 @@ PERIOD_CONFIG = {
         "av_interval": "5min",
         "outputsize": "compact",
         "label_fmt": "%H:%M",
+        "max_points": 80,
         "ttl": 5 * 60,
     },
     "1W": {
@@ -191,6 +192,7 @@ PERIOD_CONFIG = {
         "av_interval": "30min",
         "outputsize": "compact",
         "label_fmt": "%d/%m %H:%M",
+        "max_points": 50,
         "ttl": 15 * 60,
     },
     "1M": {
@@ -199,6 +201,7 @@ PERIOD_CONFIG = {
         "av_function": "TIME_SERIES_DAILY",
         "outputsize": "compact",
         "label_fmt": "%d/%m",
+        "max_points": 23,
         "ttl": 30 * 60,
     },
     "6M": {
@@ -207,6 +210,7 @@ PERIOD_CONFIG = {
         "av_function": "TIME_SERIES_DAILY",
         "outputsize": "full",
         "label_fmt": "%d/%m",
+        "max_points": 130,
         "ttl": 60 * 60,
     },
     "1Y": {
@@ -215,6 +219,7 @@ PERIOD_CONFIG = {
         "av_function": "TIME_SERIES_WEEKLY",
         "outputsize": "compact",
         "label_fmt": "%m/%Y",
+        "max_points": 54,
         "ttl": 2 * 60 * 60,
     },
 }
@@ -272,8 +277,9 @@ def _history_from_av(ticker: str, period: str) -> tuple[list[dict], str] | tuple
             except (TypeError, ValueError):
                 continue
         points.sort(key=lambda p: p["date"])
-        if period == "6M":
-            points = points[-140:]
+        max_points = cfg.get("max_points")
+        if max_points:
+            points = points[-int(max_points):]
         if points:
             return points, "alphavantage"
     return None, None
@@ -295,6 +301,9 @@ def _history_from_yf(ticker: str, period: str) -> list[dict] | None:
                 "price": float(row["Close"]),
                 "volume": int(row["Volume"]) if "Volume" in row and row["Volume"] == row["Volume"] else 0,
             })
+        max_points = cfg.get("max_points")
+        if max_points:
+            points = points[-int(max_points):]
         return points
     except Exception as exc:
         print(f"[yfinance] history {ticker} {period}: {exc}")
@@ -304,7 +313,7 @@ def _history_from_yf(ticker: str, period: str) -> list[dict] | None:
 def get_price_history(ticker: str, period: str = "1M") -> dict:
     ticker = (ticker or "PETR4.SA").upper().strip()
     period = _normalize_period(period)
-    cache_key = f"history:{ticker}:{period}"
+    cache_key = f"history:{ticker}:{period}:v2"
     cached = cache_get_fresh(cache_key)
     if cached:
         return {**cached, "cached": True}

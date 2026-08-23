@@ -16,8 +16,6 @@ import '@/app/globals.css'
 // Generated Icon CSS Imports
 import '@assets/iconify-icons/generated-icons.css'
 
-import ToastProvider from '@/components/ToastProvider'
-
 export const metadata = {
   title: 'NeuroFinance',
   description: ''
@@ -35,7 +33,6 @@ const RootLayout = async (props: ChildrenType) => {
       <body className='flex is-full min-bs-full flex-auto flex-col'>
         <InitColorSchemeScript attribute='data' defaultMode={systemMode} />
         {children}
-        <ToastProvider />
       </body>
     </html>
   )

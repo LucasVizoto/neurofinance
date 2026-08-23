@@ -5,6 +5,7 @@ import axios from 'axios'
 
 // Type Imports
 import type { StatusType, ChatDataType, ChatType, ContactType } from '@/types/apps/chatTypes'
+import { fetchMe } from './user'
 
 const API_BASE = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3005'
 
@@ -179,6 +180,16 @@ export const chatSlice = createSlice({
     }
   },
   extraReducers: (builder) => {
+    builder.addCase(fetchMe.fulfilled, (state, action) => {
+      const user = action.payload
+      if (!user) return
+      state.profileUser = {
+        ...state.profileUser,
+        fullName: user.fullname || user.username || state.profileUser.fullName,
+        avatar: user.profileImageUrl || ''
+      }
+    })
+
     // FETCH CHATS
     builder.addCase(fetchChats.fulfilled, (state, action) => {
       const chatsData = Array.isArray(action.payload) ? action.payload : []

@@ -1,4 +1,7 @@
 node_modules
 dist
-.env
 .git
+.env
+coverage
+test
+*.md

@@ -6,6 +6,7 @@ import { chatRoutes } from "./http/controllers/chats/routes.js";
 import fastifyJwt from "@fastify/jwt";
 import fastifyCookie from "@fastify/cookie";
 import fastifyCors from "@fastify/cors";
+import fastifyMultipart from "@fastify/multipart";
 
 //*********INSTANCIA DA APLICAÇÃO COM CONFIGS DO SERVIDOR*********//
 export const app = fastify()
@@ -29,6 +30,18 @@ app.register(fastifyCors, {
     origin: true,
     credentials: true,
 })
+
+app.register(fastifyMultipart, {
+    limits: {
+        fileSize: 2 * 1024 * 1024,
+        files: 1,
+    },
+})
+
+app.get('/health', async () => ({
+    status: 'ok',
+    service: 'neuro-backend',
+}))
 
 //*********REGISTRO DE ROTAS*********//
 app.register(userRoutes)

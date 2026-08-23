@@ -2,7 +2,9 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
 import { ValidationPipe } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { SwaggerModule } from '@nestjs/swagger';
+import { buildSwaggerConfig } from './swagger/swagger.document';
+import { swaggerThemeCss } from './swagger/swagger.theme';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -14,11 +16,7 @@ async function bootstrap() {
         scriptSrc: ["'self'", "'unsafe-inline'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", 'data:', 'https:'],
-        // fontSrc: ["'self'"],
-        // connectSrc: ["'self'"],
-        // frameSrc: ["'none'"],
-        // objectSrc: ["'none'"],
-        // mediaSrc: ["'none'"],
+        fontSrc: ["'self'", 'data:'],
       },
     },
     crossOriginEmbedderPolicy: false, // Desabilita o COEP para evitar bloqueios de recursos externos
@@ -64,62 +62,20 @@ async function bootstrap() {
     }),
   );
 
-  const config = new DocumentBuilder()
-    .setTitle('NeuroFinance API Gateway')
-    .setDescription(
-      `
-      API Gateway para o sistema de Inteligência Artificial NeuroFinance
-
-      Serviços Disponíveis:
-      - Users Service: Autenticação, gestão de usuários e chats
-      - AI Service: Integração com Modelos de ML e Chat Conversacional (Gemini)
-
-      Autenticação:
-      - Use JWT Bearer token para rotas protegidas
-      - Use Session token para validação de sessão
-      `
-    )
-    .setVersion('1.0')
-    .setContact(
-      `Vizoto's Team`,
-      'https://lucasvizoto.com',
-      'lucasvizoto364@gmail.com'
-    )
-    .setLicense('MIT', 'https://opensource.org/licenses/MIT')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        description: 'Enter JWT token',
-        in: 'header',
-      },
-      'JWT-auth'
-    )
-    .addApiKey(
-      {
-        type: 'apiKey',
-        name: 'x-session-token',
-        in: 'header',
-        description: 'Enter session token',
-      },
-      'session-auth'
-    )
-    .addTag('Authentication', 'Endpoints relacionados à autenticação e autorização')
-    .addTag('Users', 'Endpoints relacionados à gestão de usuários')
-    .addTag('Chats', 'Endpoints relacionados à gestão de conversas do usuário')
-    .addTag('AI & Machine Learning', 'Endpoints para integração com predições quantitativas e Gemini')
-    .addTag('Health', 'Endpoints relacionados à saúde do sistema')
-    .build();
-
-  const document = SwaggerModule.createDocument(app, config);
+  const document = SwaggerModule.createDocument(app, buildSwaggerConfig());
   SwaggerModule.setup('api', app, document, {
-    swaggerOptions: {},
-    customSiteTitle: 'NeuroFinance API Gateway Documentation',
-    customCss: `
-      .swagger-ui .topbar { display: none }
-      .swagger-ui .info .title { color: #3b82f6 }
-    `,
+    customSiteTitle: 'NeuroFinance API',
+    customCss: swaggerThemeCss,
+    customfavIcon: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f9e0.png',
+    swaggerOptions: {
+      persistAuthorization: true,
+      docExpansion: 'list',
+      filter: true,
+      displayRequestDuration: true,
+      tagsSorter: 'alpha',
+      tryItOutEnabled: true,
+      defaultModelsExpandDepth: 1,
+    },
   });
 
   const port = process.env.PORT || 3005;

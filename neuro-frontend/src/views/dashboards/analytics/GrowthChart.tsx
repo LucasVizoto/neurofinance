@@ -11,6 +11,8 @@ import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
 import type { ApexOptions } from 'apexcharts'
 
+import { historyTickAmount, toHistorySeries } from '@/libs/charts/historyAxis'
+
 const AppReactApexCharts = dynamic(() => import('@/libs/styles/AppReactApexCharts'))
 
 type Point = { date: string; close: number; growthPct: number }
@@ -28,8 +30,15 @@ const GrowthChart = ({ ticker, period, series, totalGrowthPct, loading }: Props)
   const up = totalGrowthPct >= 0
 
   const options: ApexOptions = {
-    chart: { parentHeightOffset: 0, toolbar: { show: false } },
+    chart: {
+      parentHeightOffset: 0,
+      toolbar: { show: false },
+      zoom: { enabled: false },
+      redrawOnParentResize: true,
+      redrawOnWindowResize: true
+    },
     tooltip: {
+      x: { format: 'MMM yyyy' },
       y: {
         formatter: (val: number) =>
           val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -44,13 +53,20 @@ const GrowthChart = ({ ticker, period, series, totalGrowthPct, loading }: Props)
     colors: [up ? 'var(--mui-palette-success-main)' : 'var(--mui-palette-error-main)'],
     grid: {
       borderColor: 'var(--mui-palette-divider)',
-      padding: { top: -10, bottom: -10, left: 10, right: 10 }
+      xaxis: { lines: { show: false } },
+      padding: { top: -10, bottom: 0, left: 10, right: 10 }
     },
     xaxis: {
-      categories: series.map(p => p.date),
+      type: 'datetime',
+      tickAmount: historyTickAmount(series.length),
+      axisTicks: { show: false },
+      axisBorder: { show: false },
       labels: {
-        rotate: -45,
+        datetimeUTC: false,
+        format: 'MMM yy',
         hideOverlappingLabels: true,
+        rotate: 0,
+        minHeight: 28,
         style: { colors: 'var(--mui-palette-text-disabled)', fontFamily: theme.typography.fontFamily }
       }
     },
@@ -87,7 +103,7 @@ const GrowthChart = ({ ticker, period, series, totalGrowthPct, loading }: Props)
             type='area'
             height={320}
             width='100%'
-            series={[{ name: 'Fechamento', data: series.map(p => p.close) }]}
+            series={[{ name: 'Fechamento', data: toHistorySeries(series.map(p => ({ date: p.date, value: p.close }))) }]}
             options={options}
           />
         )}

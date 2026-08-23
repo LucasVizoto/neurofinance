@@ -1,5 +1,8 @@
 node_modules
-dist
-.env
+build
+coverage
 .git
+.env
+*.md
 docker-compose.yaml
+src/generated

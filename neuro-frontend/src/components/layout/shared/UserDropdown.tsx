@@ -1,13 +1,10 @@
 'use client'
 
-// React Imports
 import { useRef, useState } from 'react'
 import type { MouseEvent } from 'react'
-
-// Next Imports
 import { useRouter } from 'next/navigation'
+import { useDispatch, useSelector } from 'react-redux'
 
-// MUI Imports
 import { styled } from '@mui/material/styles'
 import Badge from '@mui/material/Badge'
 import Popper from '@mui/material/Popper'
@@ -19,13 +16,13 @@ import Typography from '@mui/material/Typography'
 import Divider from '@mui/material/Divider'
 import MenuItem from '@mui/material/MenuItem'
 
-// Component Imports
 import CustomAvatar from '@core/components/mui/Avatar'
-
-// Hook Imports
 import { useSettings } from '@core/hooks/useSettings'
+import type { AppDispatch, RootState } from '@/redux-store'
+import { clearUser } from '@/redux-store/slices/user'
+import { getInitials } from '@/utils/getInitials'
+import { useFeedback } from '@/components/heroui'
 
-// Styled component for badge content
 const BadgeContentSpan = styled('span')({
   width: 8,
   height: 8,
@@ -36,19 +33,20 @@ const BadgeContentSpan = styled('span')({
 })
 
 const UserDropdown = () => {
-  // States
   const [open, setOpen] = useState(false)
-
-  // Refs
   const anchorRef = useRef<HTMLDivElement>(null)
-
-  // Hooks
   const router = useRouter()
-
   const { settings } = useSettings()
+  const dispatch = useDispatch<AppDispatch>()
+  const user = useSelector((state: RootState) => state.userReducer.data)
+  const { confirm } = useFeedback()
+
+  const displayName = user?.fullname || user?.username || 'Usuário'
+  const displayEmail = user?.email || ''
+  const avatarUrl = user?.profileImageUrl || undefined
 
   const handleDropdownOpen = () => {
-    !open ? setOpen(true) : setOpen(false)
+    setOpen(prev => !prev)
   }
 
   const handleDropdownClose = (event?: MouseEvent<HTMLLIElement> | (MouseEvent | TouchEvent), url?: string) => {
@@ -64,7 +62,19 @@ const UserDropdown = () => {
   }
 
   const handleUserLogout = async () => {
-    // Redirect to login page
+    const confirmed = await confirm({
+      title: 'Sair do sistema',
+      description: 'Tem certeza que deseja sair do sistema?',
+      confirmLabel: 'Sair',
+      cancelLabel: 'Cancelar',
+      status: 'warning'
+    })
+
+    if (!confirmed) return
+
+    localStorage.removeItem('token')
+    dispatch(clearUser())
+    setOpen(false)
     router.push('/login')
   }
 
@@ -79,11 +89,13 @@ const UserDropdown = () => {
       >
         <CustomAvatar
           ref={anchorRef}
-          alt='John Doe'
-          src='/images/avatars/1.png'
+          alt={displayName}
+          src={avatarUrl}
           onClick={handleDropdownOpen}
           className='cursor-pointer'
-        />
+        >
+          {getInitials(displayName)}
+        </CustomAvatar>
       </Badge>
       <Popper
         open={open}
@@ -103,36 +115,28 @@ const UserDropdown = () => {
             <Paper className={settings.skin === 'bordered' ? 'border shadow-none' : 'shadow-lg'}>
               <ClickAwayListener onClickAway={e => handleDropdownClose(e as MouseEvent | TouchEvent)}>
                 <MenuList>
-                  <div className='flex items-center plb-2 pli-5 gap-2' tabIndex={-1}>
-                    <CustomAvatar size={40} alt='John Doe' src='/images/avatars/1.png' />
-                    <div className='flex items-start flex-col'>
-                      <Typography variant='h6'>John Doe</Typography>
-                      <Typography variant='body2' color='text.disabled'>
-                        admin@sneat.com
+                  <div className='flex items-center plb-2 pli-5 gap-2 min-w-0' tabIndex={-1}>
+                    <CustomAvatar size={40} alt={displayName} src={avatarUrl}>
+                      {getInitials(displayName)}
+                    </CustomAvatar>
+                    <div className='flex items-start flex-col min-w-0'>
+                      <Typography variant='h6' className='truncate max-is-[160px]'>
+                        {displayName}
+                      </Typography>
+                      <Typography variant='body2' color='text.disabled' className='truncate max-is-[160px]'>
+                        {displayEmail}
                       </Typography>
                     </div>
                   </div>
                   <Divider className='mlb-1' />
-                  <MenuItem className='gap-3' onClick={e => handleDropdownClose(e)}>
+                  <MenuItem className='gap-3' onClick={e => handleDropdownClose(e, '/profile')}>
                     <i className='bx-user' />
-                    <Typography color='text.primary'>My Profile</Typography>
-                  </MenuItem>
-                  <MenuItem className='gap-3' onClick={e => handleDropdownClose(e)}>
-                    <i className='bx-cog' />
-                    <Typography color='text.primary'>Settings</Typography>
-                  </MenuItem>
-                  <MenuItem className='gap-3' onClick={e => handleDropdownClose(e)}>
-                    <i className='bx-dollar' />
-                    <Typography color='text.primary'>Pricing</Typography>
-                  </MenuItem>
-                  <MenuItem className='gap-3' onClick={e => handleDropdownClose(e)}>
-                    <i className='bx-help-circle' />
-                    <Typography color='text.primary'>FAQ</Typography>
+                    <Typography color='text.primary'>Meu Perfil</Typography>
                   </MenuItem>
                   <Divider className='mlb-1' />
                   <MenuItem className='gap-3' onClick={handleUserLogout}>
                     <i className='bx-power-off' />
-                    <Typography color='text.primary'>Logout</Typography>
+                    <Typography color='text.primary'>Sair</Typography>
                   </MenuItem>
                 </MenuList>
               </ClickAwayListener>

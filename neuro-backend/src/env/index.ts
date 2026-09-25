@@ -9,6 +9,11 @@ const envSchema = z.object({
     SUPABASE_URL: z.string().optional(),
     SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
     SUPABASE_AVATAR_BUCKET: z.string().default('avatars'),
+    MESSAGING: z.enum(['http', 'amqp']).default('http'),
+    RABBITMQ_URL: z.string().optional(),
+    RABBITMQ_EXCHANGE: z.string().default('neurofinance.topic'),
+    RABBITMQ_QUEUE_BACKEND: z.string().default('neuro.backend.rpc'),
+    RABBITMQ_PREFETCH_BACKEND: z.coerce.number().default(10),
 })
 
 const _env = envSchema.safeParse(process.env)

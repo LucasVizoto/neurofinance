@@ -102,5 +102,9 @@ def get_history(mongo_id):
         return jsonify(result), 500
 
 
+from messaging.consumer import start_learning_consumer
+
+start_learning_consumer()
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

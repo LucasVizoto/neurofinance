@@ -10,7 +10,7 @@ Antes de rodar a aplicação, garanta que os seguintes serviços estão rodando 
 
 - **PostgreSQL 17**: Porta `5436` (ou `5432` dependendo da sua configuração). Banco `neuro-backend`.
 - **MongoDB 8.0**: Porta `27017`.
-- **RabbitMQ**: Porta `5672` (e painel na `15672`). *[Opcional dependendo da integração]*
+- **RabbitMQ 3**: Porta `5672` (painel em `127.0.0.1:15672`). Obrigatório para a comunicação entre gateway, backend e learning. O browser continua em HTTP.
 
 ---
 

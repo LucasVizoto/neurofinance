@@ -39,7 +39,19 @@ async function parseProfileRequest(request: FastifyRequest) {
             }
         }
     } else {
-        Object.assign(fields, (request.body as Record<string, string>) || {})
+        const body = (request.body as Record<string, unknown>) || {}
+        if (typeof body.avatarBase64 === 'string' && body.avatarBase64.length > 0) {
+            avatar = {
+                buffer: Buffer.from(body.avatarBase64, 'base64'),
+                mimetype: String(body.avatarMimetype || 'image/jpeg'),
+                filename: String(body.avatarFilename || 'avatar.jpg'),
+            }
+        }
+        const fieldsOnly = { ...body }
+        delete fieldsOnly.avatarBase64
+        delete fieldsOnly.avatarMimetype
+        delete fieldsOnly.avatarFilename
+        Object.assign(fields, fieldsOnly)
     }
 
     return { fields: profileFieldsSchema.parse(fields), avatar }

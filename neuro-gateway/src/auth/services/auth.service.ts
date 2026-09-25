@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { firstValueFrom } from 'rxjs';
 import { serviceConfig } from 'src/config/gateway.config';
+import { isAmqpMessaging, RpcClientService, RpcHttpError } from 'src/messaging/rpc-client.service';
 import { LoginDto } from '../dtos/login.dto';
 import { RegisterDto } from '../dtos/register.dto';
 import { UserSession } from 'src/interfaces/user-session';
@@ -33,6 +34,7 @@ export class AuthService {
         private readonly httpService: HttpService,
         private readonly jwtService: JwtService,
         private readonly configService: ConfigService,
+        private readonly rpcClient: RpcClientService,
     ) {
 
     }
@@ -127,18 +129,12 @@ export class AuthService {
         }
 
         try {
-            const { data } = await firstValueFrom(
-                this.httpService.post(
-                    `${serviceConfig.users.url}/auth/google`,
-                    {
-                        googleId: profile.sub,
-                        email: profile.email,
-                        fullname: profile.name || profile.email.split('@')[0],
-                        profileImageUrl: profile.picture || null,
-                    },
-                    { timeout: serviceConfig.users.timeout },
-                ),
-            )
+            const data = await this.callUsers('POST', '/auth/google', {
+                googleId: profile.sub,
+                email: profile.email,
+                fullname: profile.name || profile.email.split('@')[0],
+                profileImageUrl: profile.picture || null,
+            })
             return data as { token: string }
         } catch (error: any) {
             if (error.response) {
@@ -171,14 +167,7 @@ export class AuthService {
 
     async login(loginDto: LoginDto): Promise<AuthResponse> {
         try {
-            const { data } = await firstValueFrom(
-                this.httpService.post(
-                    `${serviceConfig.users.url}/auth`,
-                    loginDto,
-                    { timeout: serviceConfig.users.timeout },
-                )
-            )
-            return data;
+            return await this.callUsers('POST', '/auth', loginDto) as AuthResponse;
         } catch (error: any) {
             if (error.response) {
                 throw new HttpException(error.response.data, error.response.status);
@@ -188,19 +177,39 @@ export class AuthService {
     }
     async register(registerDto: RegisterDto): Promise<AuthResponse> {
         try {
-            const { data } = await firstValueFrom(
-                this.httpService.post(
-                    `${serviceConfig.users.url}/users`,
-                    registerDto,
-                    { timeout: serviceConfig.users.timeout },
-                ),
-            );
-            return data;
+            return await this.callUsers('POST', '/users', registerDto) as AuthResponse;
         } catch (error: any) {
             if (error.response) {
                 throw new HttpException(error.response.data, error.response.status);
             }
             throw new InternalServerErrorException('Gateway error: ' + error.message);
         }
+    }
+
+    private async callUsers(method: string, path: string, payload: unknown) {
+        if (isAmqpMessaging()) {
+            try {
+                return await this.rpcClient.request(
+                    'backend.rpc',
+                    { method, path, payload, headers: {}, user: null },
+                    Number(process.env.RABBITMQ_RPC_TIMEOUT_BACKEND_MS || 10000),
+                );
+            } catch (error) {
+                if (error instanceof RpcHttpError) {
+                    throw Object.assign(error, { response: error.response });
+                }
+                throw error;
+            }
+        }
+
+        const response = await firstValueFrom(
+            this.httpService.request({
+                method: method.toLowerCase() as 'post',
+                url: `${serviceConfig.users.url}${path}`,
+                data: payload,
+                timeout: serviceConfig.users.timeout,
+            }),
+        );
+        return response.data;
     }
 }

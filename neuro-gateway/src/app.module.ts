@@ -13,12 +13,14 @@ import { HealthModule } from './health/health.module';
 import { AiModule } from './ai/ai.module';
 import { ChatsModule } from './chats/chats.module';
 import { UsersModule } from './users/users.module';
+import { MessagingModule } from './messaging/messaging.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    MessagingModule,
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => [

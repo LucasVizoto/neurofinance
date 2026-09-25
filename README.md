@@ -50,6 +50,7 @@ O browser fala **apenas** com o API Gateway. Usuários e metadados de chat vivem
 
 ### Infraestrutura
 - **Docker** + **Docker Compose** — Orquestração na rede `neuro-network`
+- **RabbitMQ 3** — RPC entre gateway, backend e learning (`MESSAGING=amqp`)
 - **GitHub Actions** — CI de testes do backend
 
 ---
@@ -68,7 +69,7 @@ O sistema é um monorepo de microsserviços. O frontend nunca endereça Postgres
                     │   neuro-gateway     │
                     │   NestJS   :3005    │
                     └───┬────────────┬────┘
-                        │            │
+                        │ AMQP RPC   │ AMQP RPC
            ┌────────────▼──┐    ┌────▼──────────────┐
            │ neuro-backend │    │  neuro-learning   │
            │ Fastify :3001 │    │  Flask     :5000  │

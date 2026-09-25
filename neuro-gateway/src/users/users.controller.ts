@@ -20,6 +20,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { UserInfo } from '../interfaces/user-info';
 import { ProxyService } from '../proxy/service/proxy.service';
 import { serviceConfig } from '../config/gateway.config';
+import { isAmqpMessaging } from '../messaging/rpc-client.service';
 
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -92,6 +93,28 @@ export class UsersController {
             if (file.size > MAX_AVATAR_BYTES) {
                 throw new BadRequestException('A imagem deve ter no máximo 2MB.');
             }
+        }
+
+        if (isAmqpMessaging()) {
+            const payload: Record<string, string> = {};
+            Object.entries(body || {}).forEach(([key, value]) => {
+                if (value !== undefined && value !== null && String(value).trim() !== '') {
+                    payload[key] = String(value);
+                }
+            });
+            if (file) {
+                payload.avatarBase64 = file.buffer.toString('base64');
+                payload.avatarMimetype = file.mimetype;
+                payload.avatarFilename = file.originalname || 'avatar.jpg';
+            }
+            return this.proxyService.proxyRequest(
+                'users',
+                'PUT',
+                '/users/profile',
+                payload,
+                request.headers as any,
+                user,
+            );
         }
 
         const form = new FormData();

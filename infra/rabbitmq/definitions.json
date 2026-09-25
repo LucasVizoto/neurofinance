@@ -1,0 +1,78 @@
+{
+  "vhosts": [
+    { "name": "/neurofinance" }
+  ],
+  "exchanges": [
+    {
+      "name": "neurofinance.topic",
+      "vhost": "/neurofinance",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "neurofinance.dlx",
+      "vhost": "/neurofinance",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "neuro.backend.rpc",
+      "vhost": "/neurofinance",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "neurofinance.dlx"
+      }
+    },
+    {
+      "name": "neuro.learning.rpc",
+      "vhost": "/neurofinance",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "neurofinance.dlx"
+      }
+    },
+    {
+      "name": "neurofinance.dlq",
+      "vhost": "/neurofinance",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "neurofinance.topic",
+      "vhost": "/neurofinance",
+      "destination": "neuro.backend.rpc",
+      "destination_type": "queue",
+      "routing_key": "backend.#",
+      "arguments": {}
+    },
+    {
+      "source": "neurofinance.topic",
+      "vhost": "/neurofinance",
+      "destination": "neuro.learning.rpc",
+      "destination_type": "queue",
+      "routing_key": "learning.#",
+      "arguments": {}
+    },
+    {
+      "source": "neurofinance.dlx",
+      "vhost": "/neurofinance",
+      "destination": "neurofinance.dlq",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    }
+  ]
+}

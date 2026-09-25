@@ -6,6 +6,7 @@ import { CacheFallbackService } from 'src/common/fallback/cache.fallback';
 import { DefaultFallbackService } from 'src/common/fallback/default.fallback';
 import { serviceConfig } from 'src/config/gateway.config';
 import { UserInfo } from 'src/interfaces/user-info';
+import { isAmqpMessaging, RpcClientService } from 'src/messaging/rpc-client.service';
 
 type HttpMethod = 'get' | 'post' | 'put' | 'patch' | 'delete';
 
@@ -18,6 +19,7 @@ export class ProxyService {
         private readonly circuitBreakerService: CircuitBreakerService,
         private readonly cacheFallbackService: CacheFallbackService,
         private readonly defaultFallbackService: DefaultFallbackService,
+        private readonly rpcClient: RpcClientService,
     ) { }
 
     async proxyRequest(
@@ -30,8 +32,13 @@ export class ProxyService {
     ) {
         const service = serviceConfig[serviceName];
         const url = `${service.url}${path}`;
+        const viaAmqp = isAmqpMessaging();
 
-        this.logger.log(`Proxying ${method} request to ${serviceName}: ${url}`);
+        this.logger.log(
+            viaAmqp
+                ? `RPC ${method} ${serviceName} ${path}`
+                : `Proxying ${method} request to ${serviceName}: ${url}`,
+        );
 
         const fallback = this.createServiceFallback(serviceName, method, path);
 
@@ -44,29 +51,56 @@ export class ProxyService {
                     'x-user-role': userInfo?.role,
                 };
 
-                const response = await firstValueFrom(
-                    this.httpService.request({
-                        method: method.toLocaleLowerCase() as HttpMethod,
-                        url: url,
-                        headers: enhancedHeaders,
-                        data: data,
-                        timeout: service.timeout,
-                    }),
-                );
+                const responseData = viaAmqp
+                    ? await this.rpcClient.request(
+                        serviceName === 'ai' ? 'learning.rpc' : 'backend.rpc',
+                        {
+                            method,
+                            path,
+                            payload: data ?? null,
+                            headers: {
+                                authorization: headers?.authorization || headers?.Authorization,
+                            },
+                            user: userInfo ?? null,
+                        },
+                        serviceName === 'ai'
+                            ? Number(process.env.RABBITMQ_RPC_TIMEOUT_LEARNING_MS || 180000)
+                            : Number(process.env.RABBITMQ_RPC_TIMEOUT_BACKEND_MS || 10000),
+                    )
+                    : await this.forwardHttp(method, url, enhancedHeaders, data, service.timeout);
 
                 if (method.toLowerCase() === 'get') {
                     this.cacheFallbackService.setCacheData(
                         `${serviceName}-${path}`,
-                        response.data,
+                        responseData,
                     );
                 }
 
-                return response.data;
+                return responseData;
             },
             `proxy-${serviceName}`,
             fallback,
             { failureThreshold: 3, resetTimeout: 30000, timeout: 30000 }
         )
+    }
+
+    private async forwardHttp(
+        method: string,
+        url: string,
+        headers: Record<string, string | undefined>,
+        data: unknown,
+        timeout: number,
+    ) {
+        const response = await firstValueFrom(
+            this.httpService.request({
+                method: method.toLocaleLowerCase() as HttpMethod,
+                url,
+                headers,
+                data,
+                timeout,
+            }),
+        );
+        return response.data;
     }
 
     async getServiceHealth(serviceName: keyof typeof serviceConfig) {
